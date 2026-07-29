@@ -58,7 +58,7 @@ export function ProjectsSection() {
 
       <div className="flex flex-col">
         {projects.length === 0 ? (
-          <div className="flex items-center justify-center">
+          <div className="flex items-center text-muted-foreground">
             No projects yet, come back later :)
           </div>
         ) : (

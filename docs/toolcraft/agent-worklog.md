@@ -23,6 +23,18 @@
 - Controls, persistence, settings transfer, timeline, layers, and export behavior are unaffected.
 - Verification: run lint and a production build.
 
+## 2026-07-29 — Developer project publishing
+
+- Product goal: let the portfolio owner add projects from the browser while visitors can only view them.
+- Data model: Supabase `projects` rows contain `id`, `name`, `description`, `link`, `year`, and `created_at`.
+- Security decision: public/anonymous users receive read-only access; inserts require an authenticated Supabase user whose ID matches the single configured admin UUID in both RLS and the frontend visibility check.
+- Authentication decision: expose password sign-in at `/admin`; do not expose sign-up in the app; persist the Supabase session in the browser.
+- UI decision: authenticated admin sessions see a plus button beside the Projects heading. The existing shadcn Dialog contains accessible name, description, and URL fields.
+- State flow: the project list loads from Supabase, retains the existing project as a local fallback/seed, and appends a successful insert without a page reload.
+- Project navigation: each project receives a link prop and renders as an external anchor.
+- Controls: add-project trigger and dialog form. Persistence: Supabase. Settings transfer, timeline, layers, and export behavior are unaffected.
+- Verification: run lint and production build; verify the public fallback state and configured admin UI behavior in a browser.
+
 ## 2026-07-29 — Mobile portfolio responsiveness
 
 - Product goal: make the complete portfolio readable, scrollable, and comfortably spaced on phone viewports without changing the established desktop content width.

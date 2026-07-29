@@ -1,34 +1,82 @@
-# React + TypeScript + Vite
+# Simply Liam
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Portfolio built with React, Vite, Tailwind CSS, shadcn/ui, and Supabase.
 
-Currently, two official plugins are available:
+## Developer project publishing
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Visitors can read projects without signing in. The portfolio owner signs in at
+`/admin`; after a successful admin session, a plus button appears beside the
+Projects heading and opens the add-project dialog.
 
-## React Compiler
+Security is enforced by Supabase Row Level Security (RLS), not by hiding the
+button. Only the configured Supabase user UUID can insert rows.
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+### 1. Create the admin user
 
-Note: This will impact Vite dev & build performances.
+In the Supabase dashboard:
 
-## Expanding the Oxlint configuration
+1. Open **Authentication → Users**.
+2. Create your user with an email and password.
+3. Copy the generated user UUID.
+4. Open **Authentication → Sign In / Providers → Email** and disable
+   **Allow new users to sign up**. Existing users can still sign in.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+### 2. Create the projects table
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+Open
+[`supabase/migrations/20260729000000_create_projects.sql`](supabase/migrations/20260729000000_create_projects.sql),
+replace the zero UUID with your copied user UUID, and run the file in the
+Supabase SQL Editor.
+
+The migration:
+
+- creates the `projects` table;
+- enables RLS;
+- allows public reads; and
+- allows inserts only when `auth.uid()` matches your admin UUID.
+
+### 3. Configure the app
+
+Copy `.env.example` to `.env` and fill in:
+
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+VITE_SUPABASE_ADMIN_USER_ID=your-admin-user-uuid
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Use the publishable key from **Project Settings → API Keys**. Never put a
+Supabase secret or service-role key in a `VITE_*` variable.
+
+Add the same three variables to the hosting provider before deploying.
+
+### 4. Add a project
+
+1. Run the app.
+2. Visit `/admin` and sign in.
+3. Return to `/`.
+4. Select the plus button beside **Projects**.
+5. Enter the project name, description, and full `https://` link.
+
+The new row is saved to Supabase and appears immediately. Public visitors can
+see it but cannot add projects.
+
+## Development
+
+```bash
+npm install
+npm run dev
+```
+
+## Verification
+
+```bash
+npm run lint
+npm run build
+```
+
+Supabase references:
+
+- [Password sign-in](https://supabase.com/docs/reference/javascript/auth-signinwithpassword)
+- [Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security)
+- [Auth configuration](https://supabase.com/docs/guides/auth/general-configuration)

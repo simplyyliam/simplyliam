@@ -1,0 +1,22 @@
+import { AnimatePresence, motion } from "motion/react";
+import { useTextLoop } from "../hooks/useTextLoop";
+export function Skills() {
+  const interest = useTextLoop(["Developer", "Designer"]);
+
+  return (
+    <div className="flex items-center w-40 h-12 overflow-hidden sm:w-40 font-medium">
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={interest}
+          initial={{ y: 12, opacity: 0, filter: "blur(4px)" }}
+          animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
+          exit={{ y: -13, opacity: 0, filter: "blur(4px)" }}
+          transition={{ duration: 0.45, ease: "easeOut" }}
+          className="border-b-2 border-dotted border-current leading-none text-muted-foreground"
+        >
+          {interest}
+        </motion.span>
+      </AnimatePresence>
+    </div>
+  );
+}

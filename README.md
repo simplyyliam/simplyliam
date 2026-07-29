@@ -28,6 +28,16 @@ Open
 replace the zero UUID with your copied user UUID, and run the file in the
 Supabase SQL Editor.
 
+Then run
+[`supabase/migrations/20260729010000_add_project_avatars_and_editing.sql`](supabase/migrations/20260729010000_add_project_avatars_and_editing.sql).
+This follow-up migration already contains the same admin UUID and adds:
+
+- project editing access for the portfolio owner;
+- `avatar_url` and `avatar_path` project fields;
+- a public `project-avatars` Storage bucket;
+- a 2 MB image-only upload limit; and
+- admin-only avatar upload and deletion policies.
+
 The migration:
 
 - creates the `projects` table;
@@ -56,10 +66,16 @@ Add the same three variables to the hosting provider before deploying.
 2. Visit `/admin` and sign in.
 3. Return to `/`.
 4. Select the plus button beside **Projects**.
-5. Enter the project name, description, and full `https://` link.
+5. Enter the project name, description, full `https://` link, and an
+   optional avatar image.
 
 The new row is saved to Supabase and appears immediately. Public visitors can
 see it but cannot add projects.
+
+To edit a project, hover its row and select the pencil beside the year. The
+edit control is always visible on touch-sized layouts while you are signed in.
+Replacing an avatar removes the previous image after the project update
+succeeds.
 
 ## Development
 

@@ -30,10 +30,22 @@
 - Security decision: public/anonymous users receive read-only access; inserts require an authenticated Supabase user whose ID matches the single configured admin UUID in both RLS and the frontend visibility check.
 - Authentication decision: expose password sign-in at `/admin`; do not expose sign-up in the app; persist the Supabase session in the browser.
 - UI decision: authenticated admin sessions see a plus button beside the Projects heading. The existing shadcn Dialog contains accessible name, description, and URL fields.
-- State flow: the project list loads from Supabase, retains the existing project as a local fallback/seed, and appends a successful insert without a page reload.
+- State flow: the project list is sourced entirely from Supabase and appends a successful insert without a page reload.
 - Project navigation: each project receives a link prop and renders as an external anchor.
 - Controls: add-project trigger and dialog form. Persistence: Supabase. Settings transfer, timeline, layers, and export behavior are unaffected.
 - Verification: run lint and production build; verify the public fallback state and configured admin UI behavior in a browser.
+
+## 2026-07-29 — Project avatars and browser editing
+
+- Product goal: let the portfolio owner upload a project avatar and edit an existing project from the browser.
+- Data model: add nullable `avatar_url` and `avatar_path` fields to `projects`; store image files in a public `project-avatars` bucket limited to common image formats and 2 MB.
+- Security decision: retain public project/image reads while restricting project updates and Storage metadata/upload/delete operations to the configured admin UUID through RLS.
+- Dialog decision: replace the add-only component with one reusable add/edit dialog. Both modes edit name, description, link, and an optional avatar image.
+- File lifecycle: upload a uniquely named file under the admin UUID, roll it back if the database write fails, and delete the previous avatar after a successful replacement.
+- Project-row decision: keep the project link and edit button as separate interactive elements. Show the edit control persistently on touch layouts and animate it beside the year on desktop hover.
+- Motion decision: reveal the desktop edit control from `scale: 0.25`, `opacity: 0`, and `blur(4px)` using a 0.3-second zero-bounce spring.
+- Controls: avatar file input and edit trigger. Persistence: Supabase Database and Storage. Settings transfer, timeline, layers, and export behavior are unaffected.
+- Verification: run lint/build, apply the migration, then verify add, edit, upload, public image display, and admin-only control visibility.
 
 ## 2026-07-29 — Mobile portfolio responsiveness
 

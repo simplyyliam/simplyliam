@@ -4,10 +4,12 @@ export interface PortfolioProject {
   description: string;
   link: string;
   year: number;
+  avatar_url: string | null;
+  avatar_path: string | null;
   created_at: string;
 }
 
-export type NewPortfolioProject = Pick<
+export type ProjectInput = Pick<
   PortfolioProject,
-  "name" | "description" | "link"
+  "name" | "description" | "link" | "avatar_url" | "avatar_path"
 >;

@@ -6,7 +6,7 @@ export const About = () => {
     <div className="flex flex-col gap-2">
       <div className="flex gap-4 sm:flex-row flex-col sm:items-center items-start">
         <Profiles />
-        <div className="flex items-center justify-center gap-1.75 flex-wrap">
+        <div className="flex items-baseline justify-center gap-1.75 flex-wrap">
           <h1 className="font-medium">Hey, I&apos;m liam! I&apos;m a</h1>
           <Skills/>
         </div>

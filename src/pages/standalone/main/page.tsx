@@ -8,7 +8,7 @@ export default function Main() {
         <Banner />
         <About />
         <h1 className="font-medium">Projects</h1>
-        <Project/>
+        <Project Name="Diddo" Description="Diddo is a native daily reflection app that appears at the end of your workday and asks one simple question:"/>
       </div>
     </main>
   );

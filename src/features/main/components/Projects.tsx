@@ -3,7 +3,12 @@ import { motion } from "motion/react";
 
 import { ArrowRight } from "lucide-react";
 
-export function Project() {
+interface ProjectProps {
+  Name: string
+  Description: string
+}
+
+export function Project({ Name, Description }: ProjectProps) {
   return (
     <motion.button
       initial="rest"
@@ -52,10 +57,10 @@ export function Project() {
             rest: { x: 0 },
             hover: { x: 4 },
           }}
-          className="flex gap-2 flex-wrap"
+          className="flex flex-wrap items-baseline gap-2"
         >
-          <span>Commit Sphere</span>
-          <span className="border-b-3 border-dotted border-current leading-none text-muted-foreground">A simple, elegant way to visualize your GitHub commits in 3D space.</span>
+          <span className="font-medium">{Name}</span>
+          <span className="border-b-3 border-dotted border-current text-muted-foreground">{ Description}</span>
         </motion.span>
       </div>
 

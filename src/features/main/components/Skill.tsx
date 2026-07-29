@@ -4,7 +4,7 @@ export function Skills() {
   const interest = useTextLoop(["Developer", "Designer"]);
 
   return (
-    <div className="flex items-center w-40 h-12 overflow-hidden sm:w-40 font-medium">
+    <div className="flex h-6 w-24 items-center overflow-hidden font-medium sm:w-28">
       <AnimatePresence mode="wait">
         <motion.span
           key={interest}

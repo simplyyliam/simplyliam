@@ -22,3 +22,13 @@
 - Surface decision: preserve the Figma-derived `#ECECEC` fill and the user's current placeholder content.
 - Controls, persistence, settings transfer, timeline, layers, and export behavior are unaffected.
 - Verification: run lint and a production build.
+
+## 2026-07-29 — Mobile portfolio responsiveness
+
+- Product goal: make the complete portfolio readable, scrollable, and comfortably spaced on phone viewports without changing the established desktop content width.
+- Root-cause findings: the standalone layout clipped overflow at one screen height; the banner and page gaps stayed desktop-sized on mobile; project text lacked a shrinkable column and mobile-specific composition.
+- Layout decision: allow document scrolling, scale banner height and section gaps by breakpoint, keep the banner edge-to-edge on mobile, and give text sections their own mobile gutters.
+- Component decision: keep the intro compact, stack project name and description on mobile without the dotted description underline, restore the inline underlined layout on larger screens, and keep the year visible without squeezing the description.
+- Typography decision: repair the malformed DM Sans theme declaration, use DM Sans as the global Tailwind sans token, and keep readable mobile line heights.
+- Controls, persistence, settings transfer, timeline, layers, and export behavior are unaffected.
+- Verification: run lint and production build, then inspect phone and desktop viewports in a real browser.

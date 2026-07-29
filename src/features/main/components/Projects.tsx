@@ -14,9 +14,9 @@ export function Project({ Name, Description }: ProjectProps) {
       initial="rest"
       whileHover="hover"
       animate="rest"
-      className="flex items-center justify-between p-3 w-full h-fit sm:flex-row flex-col sm:gap-0 gap-2 text-left"
+      className="flex h-fit w-full items-start justify-between gap-3 px-4 py-3 text-left sm:items-center sm:p-3"
     >
-      <div className="flex items-center gap-2.5 w-full">
+      <div className="flex min-w-0 flex-1 items-start gap-2.5 sm:items-center">
 
         <Avatar>
           <AvatarImage src="/favcon.png" />
@@ -57,15 +57,15 @@ export function Project({ Name, Description }: ProjectProps) {
             rest: { x: 0 },
             hover: { x: 4 },
           }}
-          className="flex flex-wrap items-baseline gap-2"
+          className="flex min-w-0 flex-1 flex-col items-start gap-1 sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-2"
         >
           <span className="font-medium">{Name}</span>
-          <span className="border-b-3 border-dotted border-current text-muted-foreground">{ Description}</span>
+          <span className="max-w-full leading-relaxed text-pretty text-muted-foreground sm:border-b-3 sm:border-dotted sm:border-current">{Description}</span>
         </motion.span>
       </div>
 
       {/* Year */}
-      <span className="sm:block self-end text-xs sm:text-sm">2026</span>
+      <span className="shrink-0 pt-1 text-xs tabular-nums sm:pt-0 sm:text-sm">2026</span>
     </motion.button>
   );
 }

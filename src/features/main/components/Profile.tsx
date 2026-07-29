@@ -28,7 +28,7 @@ export function Profiles() {
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
       >
         <Avatar>
-          <AvatarImage src="/favcon.png" />
+          <AvatarImage src="/favicon.png" />
           <AvatarFallback>S.L</AvatarFallback>
         </Avatar>
       </motion.div>

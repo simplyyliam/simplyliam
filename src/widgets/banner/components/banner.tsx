@@ -1,19 +1,30 @@
 import { useEffect, useState } from "react";
 import { useAdminSession } from "@/features/main/hooks/useAdminSession";
-import { getBannerUrl } from "../data/banner";
+import {
+  getBannerSettings,
+  type BannerSettings,
+} from "../data/banner";
 import { BannerDialog } from "./BannerDialog";
 
+const emptyBanner: BannerSettings = {
+  url: "",
+  sourceType: "embed",
+  assetPath: null,
+};
+
 export const Banner = () => {
-  const [url, setUrl] = useState("");
-  const { isAdmin } = useAdminSession();
+  const [settings, setSettings] =
+    useState<BannerSettings>(emptyBanner);
+  const { isAdmin, session } = useAdminSession();
+  const adminUserId = isAdmin ? session?.user.id : undefined;
 
   useEffect(() => {
     let isActive = true;
 
-    void getBannerUrl()
-      .then((savedUrl) => {
+    void getBannerSettings()
+      .then((savedSettings) => {
         if (isActive) {
-          setUrl(savedUrl ?? "");
+          setSettings(savedSettings);
         }
       })
       .catch((error: unknown) => {
@@ -28,10 +39,25 @@ export const Banner = () => {
   return (
     <div className="relative h-56 w-full min-w-0 shrink-0 sm:h-72 lg:h-89.5">
       <div className="isolate size-full overflow-hidden bg-neutral-50 [contain:paint] sm:rounded-2xl sm:[clip-path:inset(0_round_1rem)]">
-        {url ? (
+        {settings.sourceType === "image" && settings.url ? (
+          <img
+            className="size-full object-cover"
+            src={settings.url}
+            alt=""
+          />
+        ) : settings.sourceType === "video" && settings.url ? (
+          <video
+            className="size-full object-cover"
+            src={settings.url}
+            autoPlay
+            loop
+            muted
+            playsInline
+          />
+        ) : settings.url ? (
           <iframe
             className="block size-full border-0 sm:[clip-path:inset(0_round_1rem)]"
-            src={url}
+            src={settings.url}
             title="Portfolio banner"
           />
         ) : (
@@ -41,9 +67,13 @@ export const Banner = () => {
         )}
       </div>
 
-      {isAdmin && (
+      {adminUserId && (
         <div className="absolute right-3 bottom-3 z-10">
-          <BannerDialog url={url} onUrlSaved={setUrl} />
+          <BannerDialog
+            adminUserId={adminUserId}
+            settings={settings}
+            onSettingsSaved={setSettings}
+          />
         </div>
       )}
     </div>

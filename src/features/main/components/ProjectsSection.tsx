@@ -57,14 +57,20 @@ export function ProjectsSection() {
       </div>
 
       <div className="flex flex-col">
-        {projects.map((project) => (
-          <Project
-            key={project.id}
-            project={project}
-            adminUserId={adminUserId}
-            onProjectSaved={handleProjectSaved}
-          />
-        ))}
+        {projects.length === 0 ? (
+          <div className="flex items-center justify-center">
+            No projects yet, come back later :)
+          </div>
+        ) : (
+          projects.map((project) => (
+            <Project
+              key={project.id}
+              project={project}
+              adminUserId={adminUserId}
+              onProjectSaved={handleProjectSaved}
+            />
+          ))
+        )}
       </div>
     </section>
   );

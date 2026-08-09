@@ -119,3 +119,16 @@
 - Layering decision: portal the selection toolbar to the document body with fixed positioning and a layer above avatars and grid controls but below modal and dropdown overlays.
 - Scope decision: keep the introduction as a plain-text field without rich formatting controls; the contextual toolbar remains attached to biography rich text where formatting can be persisted correctly.
 - Verification: run lint and the production build, then verify non-wrapping intro copy, line-level highlights, section insets, and toolbar layering in authenticated edit mode.
+
+## 2026-08-09 — Tiptap editor lifecycle guard
+
+- Root cause: React Strict Mode temporarily destroys and recreates the Tiptap editor during development, while the content synchronization effect could still hold the destroyed instance.
+- Fix: skip content synchronization, toolbar-state reads, rendering, and Bubble Menu visibility checks whenever Tiptap reports that the editor has been destroyed.
+- Verification: lint and the production build pass; edit mode should be manually reopened after a hard refresh to confirm the authenticated browser flow.
+
+## 2026-08-09 — Inline editing visual cleanup
+
+- Overflow decision: preserve scrolling inside constrained editable grid sections while hiding native scrollbar chrome in Firefox and WebKit-based browsers.
+- Focus decision: remove the inline editors' focus rings; the caret, editable highlight, and text selection continue to communicate editing state without adding another border.
+- Spacing decision: increase the intro-to-role gap only in edit mode to offset the editable fields' negative margins and restore a natural sentence space. Published spacing remains unchanged.
+- Verification: lint and the production build pass.

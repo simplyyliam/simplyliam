@@ -52,6 +52,17 @@ const textColors = [
 const toolbarButtonClass =
   "rounded-lg text-background transition-[background-color,color,scale] duration-150 ease-out hover:bg-background/15 hover:text-background active:scale-[0.96]";
 
+const defaultTextStyles = {
+  color: undefined,
+  headingLevel: null,
+  isBold: false,
+  isBulletList: false,
+  isItalic: false,
+  isLink: false,
+  isOrderedList: false,
+  isUnderline: false,
+};
+
 export function InlineRichTextEditor({
   content,
   label,
@@ -79,7 +90,7 @@ export function InlineRichTextEditor({
       attributes: {
         "aria-label": label,
         class:
-          "min-h-16 max-w-3xl rounded-lg px-1 py-1 -mx-1 leading-relaxed text-muted-foreground caret-foreground outline-none ring-ring/30 selection:bg-neutral-400/50 selection:text-foreground transition-[box-shadow] duration-150 [&_a]:underline [&_a]:underline-offset-2 [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:font-medium [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:inline [&_p]:box-decoration-clone [&_p]:rounded-sm [&_p]:bg-muted/80 [&_p]:px-1 [&_p]:py-0.5 [&_p]:after:whitespace-pre [&_p]:after:content-['\\A'] [&_ul]:list-disc [&_ul]:pl-5 focus-visible:ring-2",
+          "min-h-16 max-w-3xl rounded-lg px-1 py-1 -mx-1 leading-relaxed text-muted-foreground caret-foreground outline-none selection:bg-neutral-400/50 selection:text-foreground [&_a]:underline [&_a]:underline-offset-2 [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:font-medium [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:inline [&_p]:box-decoration-clone [&_p]:rounded-sm [&_p]:bg-muted/80 [&_p]:px-1 [&_p]:py-0.5 [&_p]:after:whitespace-pre [&_p]:after:content-['\\A'] [&_ul]:list-disc [&_ul]:pl-5",
       },
     },
     onUpdate: ({ editor: currentEditor }) => {
@@ -89,6 +100,10 @@ export function InlineRichTextEditor({
   const textStyles = useEditorState({
     editor,
     selector: ({ editor: currentEditor }) => {
+      if (!currentEditor || currentEditor.isDestroyed) {
+        return defaultTextStyles;
+      }
+
       const headingLevel = currentEditor?.isActive("heading", { level: 1 })
         ? 1
         : currentEditor?.isActive("heading", { level: 2 })
@@ -113,7 +128,9 @@ export function InlineRichTextEditor({
   });
 
   useEffect(() => {
-    if (!editor) {
+    // React Strict Mode briefly destroys and recreates the Tiptap editor in
+    // development. Never synchronize content through that stale instance.
+    if (!editor || editor.isDestroyed) {
       return;
     }
 
@@ -124,7 +141,7 @@ export function InlineRichTextEditor({
     }
   }, [content, editor]);
 
-  if (!editor) {
+  if (!editor || editor.isDestroyed) {
     return null;
   }
 
@@ -176,6 +193,7 @@ export function InlineRichTextEditor({
           shift: { padding: 8 },
         }}
         shouldShow={({ editor: currentEditor }) =>
+          !currentEditor.isDestroyed &&
           !currentEditor.state.selection.empty
         }
       >

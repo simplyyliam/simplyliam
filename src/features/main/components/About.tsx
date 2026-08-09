@@ -25,7 +25,11 @@ export const About = ({
     <section className="flex w-full flex-col gap-3 px-4 sm:px-0">
       <div className="flex items-center gap-3 sm:gap-4">
         <Profiles />
-        <div className="flex min-w-0 flex-nowrap items-baseline gap-x-1.75">
+        <div
+          className={`flex min-w-0 flex-nowrap items-baseline ${
+            introductionEditor || rolesEditor ? "gap-x-4" : "gap-x-1.75"
+          }`}
+        >
           <h1 className="shrink-0 whitespace-nowrap font-medium">
             {introductionEditor ?? introduction}
           </h1>

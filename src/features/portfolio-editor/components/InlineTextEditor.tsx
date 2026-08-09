@@ -38,7 +38,7 @@ export function InlineTextEditor({
       contentEditable
       suppressContentEditableWarning
       className={cn(
-        "min-w-8 rounded-md bg-muted/80 px-1.5 py-0.5 -mx-1.5 -my-0.5 caret-foreground outline-none ring-ring/30 selection:bg-neutral-400/50 selection:text-foreground transition-[background-color,box-shadow] duration-150 empty:before:text-muted-foreground empty:before:content-['Type_something…'] focus-visible:bg-muted focus-visible:ring-2",
+        "min-w-8 rounded-md bg-muted/80 px-1.5 py-0.5 -mx-1.5 -my-0.5 caret-foreground outline-none selection:bg-neutral-400/50 selection:text-foreground transition-colors duration-150 empty:before:text-muted-foreground empty:before:content-['Type_something…'] focus-visible:bg-muted",
         !multiline && "whitespace-nowrap",
       )}
       onFocus={() => {

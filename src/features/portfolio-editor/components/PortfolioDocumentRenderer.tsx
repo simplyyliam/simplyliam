@@ -156,7 +156,7 @@ function PortfolioGrid({
               <div
                 className={
                   isEditing
-                    ? "size-full overflow-auto"
+                    ? "size-full overflow-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                     : "size-full overflow-visible"
                 }
               >

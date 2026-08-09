@@ -1,7 +1,12 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useTextLoop } from "../hooks/useTextLoop";
-export function Skills() {
-  const interest = useTextLoop(["Developer", "Designer"]);
+
+interface SkillsProps {
+  roles: string[];
+}
+
+export function Skills({ roles }: SkillsProps) {
+  const interest = useTextLoop(roles.length > 0 ? roles : [""]);
 
   return (
     <div className="flex h-6 w-24 items-center overflow-hidden font-medium sm:w-28">

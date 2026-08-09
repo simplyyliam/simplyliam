@@ -1,5 +1,7 @@
+export { PortfolioDocumentRenderer } from "./components/PortfolioDocumentRenderer";
 export { defaultPortfolioDocument } from "./data/defaultPortfolio";
 export { getPortfolioDocument } from "./data/portfolio";
+export { portfolioBlockRegistry } from "./registry/blocks";
 export type {
   PortfolioBlock,
   PortfolioBlockContentMap,

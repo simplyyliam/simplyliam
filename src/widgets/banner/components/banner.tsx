@@ -12,7 +12,13 @@ const emptyBanner: BannerSettings = {
   assetPath: null,
 };
 
-export const Banner = () => {
+interface BannerProps {
+  fallbackLabel?: string;
+}
+
+export const Banner = ({
+  fallbackLabel = "Banner",
+}: BannerProps) => {
   const [settings, setSettings] =
     useState<BannerSettings>(emptyBanner);
   const { isAdmin, session } = useAdminSession();
@@ -62,7 +68,7 @@ export const Banner = () => {
           />
         ) : (
           <div className="flex size-full items-center justify-center">
-            Banner
+            {fallbackLabel}
           </div>
         )}
       </div>

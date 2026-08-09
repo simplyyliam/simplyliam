@@ -67,3 +67,13 @@
 - Security decision: enable RLS, allow public reads only for the published version, and restrict draft reads and all writes to the configured portfolio owner.
 - Renderer output, editor controls, inline rich text, drag behavior, history, and publishing actions will be added in later milestones.
 - Verification: run lint, TypeScript production build, and migration syntax review; apply the migration before connecting the public renderer.
+
+## 2026-08-09 — Data-driven portfolio renderer
+
+- Product goal: render the existing public portfolio from the published Supabase document without changing its established appearance.
+- Security verification: anonymous requests can read the published `main` document and receive zero draft rows.
+- Registry decision: map the About, Banner, and Projects block types to their existing production components through one typed registry.
+- Content decision: pass introductions, rotating roles, biography text, banner fallback label, project heading, and empty-state copy from block content instead of hardcoding them in the components.
+- Resilience decision: render the seeded local document immediately, validate remote JSON at runtime, and retain the local document if loading or validation fails.
+- Layout decision: preserve the current responsive flex layout for this milestone; saved grid coordinates become active with the drag-and-resize editor milestone.
+- Verification: run lint and the production build, then inspect the Supabase-backed page at desktop and narrow viewport sizes in a real browser.

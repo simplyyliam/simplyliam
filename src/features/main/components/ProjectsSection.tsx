@@ -5,7 +5,15 @@ import type { PortfolioProject } from "../types/project";
 import { ProjectDialog } from "./ProjectDialog";
 import { Project } from "./Projects";
 
-export function ProjectsSection() {
+interface ProjectsSectionProps {
+  heading?: string;
+  emptyMessage?: string;
+}
+
+export function ProjectsSection({
+  heading = "Projects",
+  emptyMessage = "No projects yet, come back later :)",
+}: ProjectsSectionProps) {
   const [projects, setProjects] = useState<PortfolioProject[]>([]);
   const { isAdmin, session } = useAdminSession();
   const adminUserId = isAdmin ? session?.user.id : undefined;
@@ -47,7 +55,7 @@ export function ProjectsSection() {
   return (
     <section className="flex w-full flex-col gap-5">
       <div className="flex items-center gap-1 px-4 sm:px-0">
-        <h2 className="font-medium">Projects</h2>
+        <h2 className="font-medium">{heading}</h2>
         {adminUserId && (
           <ProjectDialog
             adminUserId={adminUserId}
@@ -59,7 +67,7 @@ export function ProjectsSection() {
       <div className="flex flex-col">
         {projects.length === 0 ? (
           <div className="flex items-center text-muted-foreground">
-            No projects yet, come back later :)
+            {emptyMessage}
           </div>
         ) : (
           projects.map((project) => (

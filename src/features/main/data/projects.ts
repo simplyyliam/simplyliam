@@ -6,7 +6,7 @@ import type {
 
 const avatarBucket = "project-avatars";
 const projectColumns =
-  "id, name, description, link, year, avatar_url, avatar_path, created_at";
+  "id, name, description, link, year, show_avatar, avatar_url, avatar_path, created_at";
 
 export async function getProjects(): Promise<PortfolioProject[]> {
   if (!supabase) {
@@ -16,6 +16,7 @@ export async function getProjects(): Promise<PortfolioProject[]> {
   const { data, error } = await supabase
     .from("projects")
     .select(projectColumns)
+    .order("year", { ascending: false })
     .order("created_at", { ascending: false });
 
   if (error) {

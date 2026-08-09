@@ -11,12 +11,14 @@ import {
 } from "@/components/ui/dialog";
 import {
   Field,
+  FieldContent,
   FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Add01Icon, PencilEdit02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -33,6 +35,7 @@ import type {
 } from "../types/project";
 
 const maxAvatarSize = 2 * 1024 * 1024;
+const currentYear = new Date().getFullYear();
 const allowedAvatarTypes = new Set([
   "image/gif",
   "image/jpeg",
@@ -54,11 +57,15 @@ export function ProjectDialog({
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [showAvatar, setShowAvatar] = useState(
+    project?.show_avatar ?? true,
+  );
   const isEditing = Boolean(project);
   const fieldId = project?.id ?? "new";
 
   function handleOpenChange(open: boolean) {
     setIsOpen(open);
+    setShowAvatar(project?.show_avatar ?? true);
     if (!open) {
       setError("");
     }
@@ -76,12 +83,17 @@ export function ProjectDialog({
       avatarEntry instanceof File && avatarEntry.size > 0
         ? avatarEntry
         : null;
+    const year = Number(formData.get("year"));
 
     let uploadedAvatar: Awaited<
       ReturnType<typeof uploadProjectAvatar>
     > | null = null;
 
     try {
+      if (!Number.isInteger(year) || year < 1900 || year > 9999) {
+        throw new Error("Enter a valid four-digit project year.");
+      }
+
       if (avatarFile) {
         if (!allowedAvatarTypes.has(avatarFile.type)) {
           throw new Error("Use a PNG, JPEG, WebP, or GIF image.");
@@ -101,6 +113,8 @@ export function ProjectDialog({
         name: String(formData.get("name")).trim(),
         description: String(formData.get("description")).trim(),
         link: String(formData.get("link")).trim(),
+        year,
+        show_avatar: showAvatar,
         avatar_url:
           uploadedAvatar?.url ?? project?.avatar_url ?? null,
         avatar_path:
@@ -228,30 +242,66 @@ export function ProjectDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor={`project-avatar-${fieldId}`}>
-                Avatar
+              <FieldLabel htmlFor={`project-year-${fieldId}`}>
+                Year
               </FieldLabel>
-              <div className="flex items-center gap-3">
-                <Avatar size="lg">
-                  <AvatarImage
-                    src={project?.avatar_url ?? "/favcon.png"}
-                    alt=""
-                  />
-                  <AvatarFallback>
-                    {project?.name.slice(0, 2).toUpperCase() ?? "PR"}
-                  </AvatarFallback>
-                </Avatar>
-                <Input
-                  id={`project-avatar-${fieldId}`}
-                  name="avatar"
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/gif"
-                />
-              </div>
-              <FieldDescription>
-                Optional. PNG, JPEG, WebP, or GIF up to 2 MB.
-              </FieldDescription>
+              <Input
+                id={`project-year-${fieldId}`}
+                name="year"
+                className="text-base tabular-nums md:text-xs"
+                type="number"
+                inputMode="numeric"
+                defaultValue={project?.year ?? currentYear}
+                min={1900}
+                max={9999}
+                required
+              />
             </Field>
+
+            <Field orientation="horizontal">
+              <FieldContent>
+                <FieldLabel htmlFor={`project-show-avatar-${fieldId}`}>
+                  Show avatar
+                </FieldLabel>
+                <FieldDescription>
+                  Display the project image and arrow hover interaction.
+                </FieldDescription>
+              </FieldContent>
+              <Switch
+                id={`project-show-avatar-${fieldId}`}
+                checked={showAvatar}
+                onCheckedChange={setShowAvatar}
+                aria-label="Show project avatar"
+              />
+            </Field>
+
+            {showAvatar && (
+              <Field>
+                <FieldLabel htmlFor={`project-avatar-${fieldId}`}>
+                  Avatar
+                </FieldLabel>
+                <div className="flex items-center gap-3">
+                  <Avatar size="lg">
+                    <AvatarImage
+                      src={project?.avatar_url ?? "/favcon.png"}
+                      alt=""
+                    />
+                    <AvatarFallback>
+                      {project?.name.slice(0, 2).toUpperCase() ?? "PR"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <Input
+                    id={`project-avatar-${fieldId}`}
+                    name="avatar"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                  />
+                </div>
+                <FieldDescription>
+                  Optional. PNG, JPEG, WebP, or GIF up to 2 MB.
+                </FieldDescription>
+              </Field>
+            )}
 
             {error && (
               <Field data-invalid>

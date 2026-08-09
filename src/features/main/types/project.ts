@@ -4,6 +4,7 @@ export interface PortfolioProject {
   description: string;
   link: string;
   year: number;
+  show_avatar: boolean;
   avatar_url: string | null;
   avatar_path: string | null;
   created_at: string;
@@ -11,5 +12,11 @@ export interface PortfolioProject {
 
 export type ProjectInput = Pick<
   PortfolioProject,
-  "name" | "description" | "link" | "avatar_url" | "avatar_path"
+  | "name"
+  | "description"
+  | "link"
+  | "year"
+  | "show_avatar"
+  | "avatar_url"
+  | "avatar_path"
 >;

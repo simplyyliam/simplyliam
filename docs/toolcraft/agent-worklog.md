@@ -219,6 +219,19 @@
 - Target geometry, collision handling, source expansion, insertion, persistence, intrinsic edit height, content, theming, reset, and publishing behavior are unchanged.
 - Verification: run lint, production build, and diff checks, then inspect left, right, and full-width drag targets in the authenticated browser.
 
+## 2026-08-09 — Year-grouped project index
+
+- Product goal: present portfolio projects as a compact editorial index with automatic year grouping, consistent spacing, and optional project avatars.
+- Data decision: persist `show_avatar` as a non-null boolean defaulting to true, retain the existing integer `year`, and validate years between 1900 and 9999.
+- Query decision: fetch projects by descending year and then descending creation time; the client groups rows by their saved year so create and edit changes reorganize immediately.
+- Dialog controls: expose a required numeric Year field and a shadcn Switch for avatar visibility in both create and edit modes. Hide the avatar upload field while avatar display is disabled without deleting an existing stored image.
+- Layout decision: render the section heading above a shadcn Separator, then use a narrow tabular year column beside a vertically spaced project list.
+- Typography decision: keep names and em-dash descriptions inline with natural wrapping, muted descriptions, and no decorative dotted underline.
+- Interaction decision: avatar rows retain the spring-based arrow reveal; avatar-hidden rows omit the arrow and use a 200 ms semantic `muted` background-color hover.
+- Admin decision: retain the add control and per-row edit dialog without exposing either to public visitors.
+- Portfolio editor layout, banner media, inline text editing, reset, publishing, and section drag behavior are unchanged.
+- Verification: apply the migration, run lint and production build, then test public grouping plus authenticated create/edit flows with avatar visibility both enabled and disabled.
+
 ## 2026-08-09 — Pixel-precise bento layout
 
 - Root cause: visible content-height cards were layered over a grid that still reserved coarse 60 px vertical steps, so the drag placeholder exposed a larger box and unused row remainder produced uneven gaps.

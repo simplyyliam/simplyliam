@@ -148,6 +148,38 @@
 - Scope decision: About and Projects keep their 10 px editing inset for text readability.
 - Verification: run lint, production build, and diff checks.
 
+## 2026-08-09 — Stable bento drop targets
+
+- Root cause: changing the live grid item width during every drag frame made pointer geometry, collision handling, and the fitted placeholder compete, producing offset cards and intermittent slot filling.
+- Drag decision: keep the moving section at its canonical size and let it track the pointer freely while rendering a separate fitted drop target from the drag-start layout snapshot.
+- Auto-fit decision: calculate the full available horizontal interval at the pointer's vertical position; dropping below all sections consistently previews and commits a full-row section.
+- Stability decision: do not mutate grid internals during drag. Neighboring sections remain frozen, and release commits the exact fitted target before vertical compaction.
+- Preview decision: hide the library placeholder so only one unambiguous drop target is visible.
+- Resize decision: per-item resize flags now respect edit mode, preventing About and Projects from exposing resize handles in public preview.
+- Reset decision: add a layout-only reset control that restores the seeded responsive arrangement without changing text, visibility, projects, or banner media.
+- Verification: run lint and the production build, then test side-by-side, full-row, preview-mode, and reset flows in the authenticated browser.
+
+## 2026-08-09 — Balanced occupied-row drops
+
+- Product goal: allow a section dropped over a full-width section to form a clean side-by-side bento row instead of being rejected or visually overlapping it.
+- Detection decision: use the pointer's row and column to identify the incumbent section directly beneath the drag handle, avoiding false collisions caused by a tall dragged card crossing later rows.
+- Distribution decision: divide the active breakpoint's columns as evenly as possible between every section in that row, retaining the shared 16 px grid gap.
+- Constraint decision: only preview a balanced row when every affected section satisfies its saved minimum and maximum width; otherwise retain the existing free-slot behavior.
+- Placement decision: pointer position determines whether the dragged section enters before or after the incumbent, and both geometries are committed together on release.
+- Persistence, inline content, banner media, projects, visibility, publishing, and reset behavior are unchanged.
+- Verification: run lint, production build, and diff checks, then test left-half, right-half, and full-row drops in the authenticated browser.
+
+## 2026-08-09 — Atomic bento releases
+
+- Root cause: React Grid Layout briefly committed its pointer-sized internal layout after the portfolio editor had calculated a fitted row, producing a visible release-time jump before the document state caught up.
+- Release decision: overwrite the grid's pending release layout with the exact fitted and compacted geometry before its internal state commit, so the grid and portfolio document receive one identical result.
+- Live-preview decision: resize and reposition incumbent row sections during the drag while leaving the dragged card under direct pointer control.
+- Stability decision: derive every live companion frame from the immutable drag-start snapshot, restoring sections immediately when the pointer leaves a valid balanced row.
+- Measurement decision: queue intrinsic-height observations during drag and apply their latest values after release, preventing responsive text measurement from fighting the live width preview.
+- Invalid-drop decision: atomically restore the drag-start layout when no valid fitted target exists.
+- Persistence, content editing, banner media, project data, visibility, reset, and publishing behavior are unchanged.
+- Verification: run lint, production build, and diff checks, then test live companion resizing, valid release, invalid release, and repeated drags in the authenticated browser.
+
 ## 2026-08-09 — Pixel-precise bento layout
 
 - Root cause: visible content-height cards were layered over a grid that still reserved coarse 60 px vertical steps, so the drag placeholder exposed a larger box and unused row remainder produced uneven gaps.

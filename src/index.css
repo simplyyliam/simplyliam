@@ -141,6 +141,6 @@
     height: var(--portfolio-section-height) !important;
 }
 
-.react-grid-item.react-grid-placeholder {
-    clip-path: inset(0 0 16px 0 round var(--radius-2xl));
+.portfolio-autofit-grid .react-grid-placeholder {
+    opacity: 0;
 }

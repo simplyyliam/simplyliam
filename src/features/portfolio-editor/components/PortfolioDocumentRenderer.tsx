@@ -145,9 +145,14 @@ interface HorizontalSlot {
   w: number;
 }
 
-interface DragPreview extends HorizontalSlot {
+interface LayoutPlacement extends HorizontalSlot {
   i: string;
   y: number;
+}
+
+interface DragPreview extends LayoutPlacement {
+  h: number;
+  companions: LayoutPlacement[];
 }
 
 function findHorizontalSlot(
@@ -224,29 +229,6 @@ function findHorizontalSlot(
   };
 }
 
-function restoreDragLayout(
-  layout: Layout,
-  baseline: Layout,
-  preview: DragPreview,
-) {
-  const baselineItems = new Map(baseline.map((item) => [item.i, item]));
-
-  for (const item of layout) {
-    const baselineItem = baselineItems.get(item.i);
-
-    if (item.i === preview.i) {
-      item.x = preview.x;
-      item.y = preview.y;
-      item.w = preview.w;
-    } else if (baselineItem) {
-      item.x = baselineItem.x;
-      item.y = baselineItem.y;
-      item.w = baselineItem.w;
-      item.h = baselineItem.h;
-    }
-  }
-}
-
 function pointerColumn(
   event: Event,
   container: HTMLDivElement | null,
@@ -273,6 +255,227 @@ function pointerColumn(
     columns - 1,
     Math.max(0, Math.floor(relativeX / columnStep)),
   );
+}
+
+function pointerGridY(
+  event: Event,
+  container: HTMLDivElement | null,
+) {
+  const clientY = "clientY" in event &&
+    typeof event.clientY === "number"
+    ? event.clientY
+    : null;
+
+  if (clientY === null || !container) {
+    return null;
+  }
+
+  return Math.max(
+    0,
+    Math.round(clientY - container.getBoundingClientRect().top),
+  );
+}
+
+function findBalancedRowPreview(
+  layout: Layout,
+  itemId: string,
+  pointerY: number,
+  anchorColumn: number,
+  columns: number,
+): DragPreview | null {
+  const draggedItem = layout.find((item) => item.i === itemId);
+  const rowItems = layout
+    .filter(
+      (item) =>
+        item.i !== itemId &&
+        pointerY >= item.y &&
+        pointerY < item.y + Math.max(1, item.h - gridSectionGap),
+    )
+    .sort((first, second) => first.x - second.x);
+
+  if (!draggedItem || rowItems.length === 0) {
+    return null;
+  }
+
+  const hoveredIndex = rowItems.findIndex(
+    (item) =>
+      anchorColumn >= item.x && anchorColumn < item.x + item.w,
+  );
+
+  if (hoveredIndex === -1) {
+    return null;
+  }
+
+  const hoveredItem = rowItems[hoveredIndex];
+  const insertBefore =
+    anchorColumn < hoveredItem.x + hoveredItem.w / 2;
+  const orderedItems = [...rowItems];
+  orderedItems.splice(
+    hoveredIndex + (insertBefore ? 0 : 1),
+    0,
+    draggedItem,
+  );
+
+  const baseWidth = Math.floor(columns / orderedItems.length);
+  const remainder = columns % orderedItems.length;
+  const widths = orderedItems.map((_, index) =>
+    baseWidth + (index < remainder ? 1 : 0)
+  );
+  const respectsConstraints = orderedItems.every((item, index) => {
+    const itemWidth = widths[index];
+    return itemWidth >= (item.minW ?? 1) &&
+      itemWidth <= (item.maxW ?? columns);
+  });
+
+  if (!respectsConstraints) {
+    return null;
+  }
+
+  const rowY = Math.min(...rowItems.map((item) => item.y));
+  let x = 0;
+  const placements = orderedItems.map((item, index) => {
+    const placement = {
+      i: item.i,
+      x,
+      y: rowY,
+      w: widths[index],
+    };
+    x += widths[index];
+    return placement;
+  });
+  const draggedPlacement = placements.find(
+    (placement) => placement.i === itemId,
+  );
+
+  if (!draggedPlacement) {
+    return null;
+  }
+
+  return {
+    ...draggedPlacement,
+    h: draggedItem.h,
+    companions: placements.filter(
+      (placement) => placement.i !== itemId,
+    ),
+  };
+}
+
+const freeDragCompactor = {
+  ...verticalCompactor,
+  allowOverlap: true,
+  preventCollision: false,
+  compact: (layout: Layout) => layout,
+};
+
+function fitAndCompactLayout(
+  baseline: Layout,
+  preview: DragPreview,
+  columns: number,
+) {
+  const placements = new Map(
+    [preview, ...preview.companions].map((placement) => [
+      placement.i,
+      placement,
+    ]),
+  );
+  const fittedLayout = baseline.map((item) =>
+    placements.has(item.i)
+      ? {
+          ...item,
+          x: placements.get(item.i)!.x,
+          y: placements.get(item.i)!.y,
+          w: placements.get(item.i)!.w,
+        }
+      : { ...item }
+  );
+
+  return verticalCompactor.compact(fittedLayout, columns);
+}
+
+function dragPreviewsMatch(
+  first: DragPreview | null,
+  second: DragPreview,
+) {
+  return first?.i === second.i &&
+    first.x === second.x &&
+    first.y === second.y &&
+    first.w === second.w &&
+    first.h === second.h &&
+    JSON.stringify(first.companions) === JSON.stringify(second.companions);
+}
+
+function applyLiveCompanionLayout(
+  layout: Layout,
+  baseline: Layout,
+  draggedItemId: string,
+  preview: DragPreview | null,
+) {
+  const baselineItems = new Map(baseline.map((item) => [item.i, item]));
+  const companionPlacements = new Map(
+    (preview?.companions ?? []).map((placement) => [
+      placement.i,
+      placement,
+    ]),
+  );
+
+  for (const item of layout) {
+    if (item.i === draggedItemId) {
+      continue;
+    }
+
+    const baselineItem = baselineItems.get(item.i);
+    const companionPlacement = companionPlacements.get(item.i);
+
+    if (!baselineItem) {
+      continue;
+    }
+
+    item.x = companionPlacement?.x ?? baselineItem.x;
+    item.y = companionPlacement?.y ?? baselineItem.y;
+    item.w = companionPlacement?.w ?? baselineItem.w;
+    item.h = baselineItem.h;
+  }
+}
+
+function overwriteLayout(layout: Layout, nextLayout: Layout) {
+  const nextItems = new Map(nextLayout.map((item) => [item.i, item]));
+
+  for (const item of layout) {
+    const nextItem = nextItems.get(item.i);
+
+    if (!nextItem) {
+      continue;
+    }
+
+    item.x = nextItem.x;
+    item.y = nextItem.y;
+    item.w = nextItem.w;
+    item.h = nextItem.h;
+  }
+}
+
+function storeAutoHeightMeasurement(
+  measurements: AutoHeightMeasurements,
+  breakpoint: PortfolioBreakpoint,
+  blockId: string,
+  measurement: AutoHeightMeasurement,
+) {
+  const currentMeasurement = measurements[breakpoint]?.[blockId];
+
+  if (
+    currentMeasurement?.height === measurement.height &&
+    currentMeasurement.rows === measurement.rows
+  ) {
+    return measurements;
+  }
+
+  return {
+    ...measurements,
+    [breakpoint]: {
+      ...measurements[breakpoint],
+      [blockId]: measurement,
+    },
+  };
 }
 
 function copyGridItems(layout: Layout): PortfolioGridItem[] {
@@ -328,8 +531,14 @@ function PortfolioGrid({
     useState<PortfolioBreakpoint>("lg");
   const [autoHeightMeasurements, setAutoHeightMeasurements] =
     useState<AutoHeightMeasurements>({});
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
   const dragBaselineRef = useRef<Layout | null>(null);
   const dragPreviewRef = useRef<DragPreview | null>(null);
+  const isDraggingRef = useRef(false);
+  const pendingAutoHeightMeasurementsRef =
+    useRef<AutoHeightMeasurements>({});
+  const ignoreNextLayoutChangeRef = useRef(false);
 
   const visibleBlocks = useMemo(
     () => document.blocks.filter((block) => block.visible),
@@ -362,7 +571,7 @@ function PortfolioGrid({
             item.h,
           minH: 1,
           maxH: undefined,
-          isResizable: true,
+          isResizable: isEditing && currentBreakpoint !== "sm",
           resizeHandles: horizontalResizeHandles,
         };
       });
@@ -372,50 +581,87 @@ function PortfolioGrid({
       md: applyAutoHeights(document.layouts.md, "md"),
       sm: applyAutoHeights(document.layouts.sm, "sm"),
     };
-  }, [autoHeightBlockIds, autoHeightMeasurements, document.layouts]);
+  }, [
+    autoHeightBlockIds,
+    autoHeightMeasurements,
+    document.layouts,
+    isEditing,
+  ]);
 
   const handleAutoHeightChange = useCallback(
     (blockId: string, height: number) => {
-      const rows = rowsForHeight(height);
+      const measurement = {
+        height: Math.ceil(height),
+        rows: rowsForHeight(height),
+      };
 
-      const measuredHeight = Math.ceil(height);
+      if (isDraggingRef.current) {
+        pendingAutoHeightMeasurementsRef.current =
+          storeAutoHeightMeasurement(
+            pendingAutoHeightMeasurementsRef.current,
+            breakpoint,
+            blockId,
+            measurement,
+          );
+        return;
+      }
 
-      setAutoHeightMeasurements((currentMeasurements) => {
-        const currentMeasurement =
-          currentMeasurements[breakpoint]?.[blockId];
-
-        if (
-          currentMeasurement?.height === measuredHeight &&
-          currentMeasurement.rows === rows
-        ) {
-          return currentMeasurements;
-        }
-
-        return {
-          ...currentMeasurements,
-          [breakpoint]: {
-            ...currentMeasurements[breakpoint],
-            [blockId]: { height: measuredHeight, rows },
-          },
-        };
-      });
+      setAutoHeightMeasurements((currentMeasurements) =>
+        storeAutoHeightMeasurement(
+          currentMeasurements,
+          breakpoint,
+          blockId,
+          measurement,
+        )
+      );
     },
     [breakpoint],
   );
 
   const handleLayoutChange = useCallback(
     (_layout: Layout, layouts: ResponsiveLayouts<PortfolioBreakpoint>) => {
-      if (isEditing) {
-        onLayoutsChange(mergeLayouts(layouts, document.layouts));
+      if (!isEditing) {
+        return;
       }
+
+      if (ignoreNextLayoutChangeRef.current) {
+        ignoreNextLayoutChangeRef.current = false;
+        return;
+      }
+
+      onLayoutsChange(mergeLayouts(layouts, document.layouts));
     },
     [document.layouts, isEditing, onLayoutsChange],
   );
 
   return (
-    <div className="w-full" ref={containerRef}>
+    <div className="relative w-full" ref={containerRef}>
       {mounted && (
-        <Responsive<PortfolioBreakpoint>
+        <>
+          {dragPreview && (() => {
+            const columns = gridColumns[breakpoint];
+            const horizontalGap = gridMargins[breakpoint][0];
+            const columnWidth =
+              (width - horizontalGap * (columns - 1)) / columns;
+
+            return (
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute z-0 rounded-2xl bg-destructive/20 ring-1 ring-destructive/25"
+                style={{
+                  left: dragPreview.x * (columnWidth + horizontalGap),
+                  top: dragPreview.y,
+                  width:
+                    dragPreview.w * columnWidth +
+                    (dragPreview.w - 1) * horizontalGap,
+                  height: Math.max(1, dragPreview.h - gridSectionGap),
+                }}
+              />
+            );
+          })()}
+
+          <Responsive<PortfolioBreakpoint>
+          className="portfolio-autofit-grid"
           width={width}
           layouts={renderedLayouts}
           breakpoints={gridBreakpoints}
@@ -423,6 +669,9 @@ function PortfolioGrid({
           rowHeight={gridRowHeight}
           margin={gridMargins}
           containerPadding={null}
+          compactor={isEditing && isDragging
+            ? freeDragCompactor
+            : verticalCompactor}
           dragConfig={{
             enabled: isEditing,
             handle: ".portfolio-drag-handle",
@@ -435,11 +684,15 @@ function PortfolioGrid({
           onDragStart={(layout) => {
             dragBaselineRef.current = copyGridItems(layout);
             dragPreviewRef.current = null;
+            isDraggingRef.current = true;
+            pendingAutoHeightMeasurementsRef.current = {};
+            setIsDragging(true);
+            setDragPreview(null);
           }}
-          onDrag={(layout, _oldItem, newItem, placeholder, event) => {
+          onDrag={(layout, _oldItem, newItem, _placeholder, event) => {
             const baseline = dragBaselineRef.current;
 
-            if (!baseline || !newItem || !placeholder) {
+            if (!baseline || !newItem) {
               return;
             }
 
@@ -454,58 +707,134 @@ function PortfolioGrid({
               columns - 1,
               newItem.x + Math.floor(newItem.w / 2),
             );
-            const slot = findHorizontalSlot(
-              baseline,
-              newItem.i,
-              newItem.y,
-              newItem.h,
-              anchorColumn,
-              columns,
+            const pointerY = pointerGridY(
+              event,
+              containerRef.current,
             );
+            const balancedPreview = pointerY === null
+              ? null
+              : findBalancedRowPreview(
+                  baseline,
+                  newItem.i,
+                  pointerY,
+                  anchorColumn,
+                  columns,
+                );
+            const slot = balancedPreview
+              ? null
+              : findHorizontalSlot(
+                  baseline,
+                  newItem.i,
+                  newItem.y,
+                  newItem.h,
+                  anchorColumn,
+                  columns,
+                );
 
-            if (!slot) {
+            if (!balancedPreview && !slot) {
+              applyLiveCompanionLayout(
+                layout,
+                baseline,
+                newItem.i,
+                null,
+              );
+              dragPreviewRef.current = null;
+              setDragPreview(null);
               return;
             }
 
-            const preview = {
+            const initialPreview: DragPreview = balancedPreview ?? {
               i: newItem.i,
-              x: slot.x,
+              x: slot!.x,
               y: newItem.y,
-              w: slot.w,
+              w: slot!.w,
+              h: newItem.h,
+              companions: [],
             };
+            const compactedItem = fitAndCompactLayout(
+              baseline,
+              initialPreview,
+              columns,
+            ).find((item) => item.i === newItem.i);
+            const preview = compactedItem
+              ? { ...initialPreview, y: compactedItem.y }
+              : initialPreview;
 
+            applyLiveCompanionLayout(
+              layout,
+              baseline,
+              newItem.i,
+              preview,
+            );
             dragPreviewRef.current = preview;
-            restoreDragLayout(layout, baseline, preview);
-            placeholder.x = preview.x;
-            placeholder.y = preview.y;
-            placeholder.w = preview.w;
+            setDragPreview((currentPreview) =>
+              dragPreviewsMatch(currentPreview, preview)
+                ? currentPreview
+                : preview
+            );
           }}
           onDragStop={(layout) => {
             const baseline = dragBaselineRef.current;
             const preview = dragPreviewRef.current;
 
+            if (baseline) {
+              const finalLayout = preview
+                ? fitAndCompactLayout(
+                    baseline,
+                    preview,
+                    gridColumns[breakpoint],
+                  )
+                : baseline;
+
+              overwriteLayout(layout, finalLayout);
+            }
+
             if (baseline && preview) {
-              restoreDragLayout(layout, baseline, preview);
-              const compactedItems = new Map(
-                verticalCompactor
-                  .compact(layout, gridColumns[breakpoint])
-                  .map((item) => [item.i, item]),
+              const compactedLayout = copyGridItems(
+                fitAndCompactLayout(
+                  baseline,
+                  preview,
+                  gridColumns[breakpoint],
+                ),
               );
 
-              for (const item of layout) {
-                const compactedItem = compactedItems.get(item.i);
-
-                if (compactedItem) {
-                  item.x = compactedItem.x;
-                  item.y = compactedItem.y;
-                  item.w = compactedItem.w;
-                  item.h = compactedItem.h;
-                }
-              }
+              ignoreNextLayoutChangeRef.current = true;
+              onLayoutsChange({
+                ...document.layouts,
+                [breakpoint]: compactedLayout,
+              });
+              queueMicrotask(() => {
+                ignoreNextLayoutChangeRef.current = false;
+              });
             }
 
             dragBaselineRef.current = null;
             dragPreviewRef.current = null;
+            isDraggingRef.current = false;
+            setIsDragging(false);
+            setDragPreview(null);
+
+            const pendingMeasurements =
+              pendingAutoHeightMeasurementsRef.current;
+            pendingAutoHeightMeasurementsRef.current = {};
+            setAutoHeightMeasurements((currentMeasurements) => {
+              let nextMeasurements = currentMeasurements;
+
+              for (const [pendingBreakpoint, measurements] of
+                Object.entries(pendingMeasurements)) {
+                for (const [blockId, measurement] of
+                  Object.entries(measurements ?? {})) {
+                  nextMeasurements = storeAutoHeightMeasurement(
+                    nextMeasurements,
+                    pendingBreakpoint as PortfolioBreakpoint,
+                    blockId,
+                    measurement,
+                  );
+                }
+              }
+
+              return nextMeasurements;
+            });
           }}
           onLayoutChange={handleLayoutChange}
         >
@@ -586,7 +915,8 @@ function PortfolioGrid({
               </div>
             );
           })}
-        </Responsive>
+          </Responsive>
+        </>
       )}
     </div>
   );
@@ -665,6 +995,17 @@ export function PortfolioDocumentRenderer() {
       blocks: currentDocument.blocks.map((block) =>
         block.id === nextBlock.id ? nextBlock : block
       ),
+    }));
+  }, []);
+
+  const handleResetLayout = useCallback(() => {
+    setWorkingDocument((currentDocument) => ({
+      ...currentDocument,
+      layouts: {
+        lg: copyGridItems(defaultPortfolioDocument.layouts.lg),
+        md: copyGridItems(defaultPortfolioDocument.layouts.md),
+        sm: copyGridItems(defaultPortfolioDocument.layouts.sm),
+      },
     }));
   }, []);
 
@@ -751,6 +1092,7 @@ export function PortfolioDocumentRenderer() {
             onDiscardChanges={() => {
               void handleDiscardChanges();
             }}
+            onResetLayout={handleResetLayout}
             onPublish={() => {
               void handlePublish();
             }}

@@ -15,12 +15,13 @@ interface EditorToolbarProps {
   isPublishing: boolean
   onToggleEditing: () => void
   onDiscardChanges: () => void
+  onResetLayout: () => void
   onPublish: () => void
   sections: PortfolioBlock[]
   onSectionVisibilityChange: (sectionId: string, visible: boolean) => void
 }
 
-export function EditorToolbar({ isEditing, hasChanges, isPublishing, onToggleEditing, onDiscardChanges, onPublish, sections, onSectionVisibilityChange }: EditorToolbarProps) {
+export function EditorToolbar({ isEditing, hasChanges, isPublishing, onToggleEditing, onDiscardChanges, onResetLayout, onPublish, sections, onSectionVisibilityChange }: EditorToolbarProps) {
   const visibleSectionCount = sections.filter((section) => section.visible).length
 
   return (
@@ -64,6 +65,15 @@ export function EditorToolbar({ isEditing, hasChanges, isPublishing, onToggleEdi
               </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isPublishing}
+            onClick={onResetLayout}
+          >
+            Reset layout
+          </Button>
 
           <Button
             type="button"

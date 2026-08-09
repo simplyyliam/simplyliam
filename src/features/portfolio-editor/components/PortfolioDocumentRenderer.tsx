@@ -18,6 +18,7 @@ import {
   type ResizeHandleAxis,
   type ResponsiveLayouts,
   useContainerWidth,
+  verticalCompactor,
 } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -78,17 +79,20 @@ type AutoHeightMeasurements = Partial<
 >;
 
 interface AutoHeightContentProps {
+  blockId: string;
   children: ReactNode;
   editingInset: number;
-  onHeightChange: (height: number) => void;
+  onHeightChange: (blockId: string, height: number) => void;
 }
 
 function AutoHeightContent({
+  blockId,
   children,
   editingInset,
   onHeightChange,
 }: AutoHeightContentProps) {
   const contentRef = useRef<HTMLDivElement>(null);
+  const lastReportedHeightRef = useRef<number | null>(null);
 
   useLayoutEffect(() => {
     const content = contentRef.current;
@@ -98,7 +102,14 @@ function AutoHeightContent({
     }
 
     const measure = () => {
-      onHeightChange(content.scrollHeight + editingInset);
+      const height = Math.ceil(content.scrollHeight + editingInset);
+
+      if (lastReportedHeightRef.current === height) {
+        return;
+      }
+
+      lastReportedHeightRef.current = height;
+      onHeightChange(blockId, height);
     };
 
     measure();
@@ -108,7 +119,7 @@ function AutoHeightContent({
     return () => {
       observer.disconnect();
     };
-  }, [editingInset, onHeightChange]);
+  }, [blockId, editingInset, onHeightChange]);
 
   return (
     <div ref={contentRef} className="w-full">
@@ -119,6 +130,149 @@ function AutoHeightContent({
 
 function rowsForHeight(height: number) {
   return Math.max(1, Math.ceil(height) + gridSectionGap);
+}
+
+function verticallyOverlaps(
+  first: PortfolioGridItem,
+  second: PortfolioGridItem,
+) {
+  return first.y < second.y + second.h &&
+    first.y + first.h > second.y;
+}
+
+interface HorizontalSlot {
+  x: number;
+  w: number;
+}
+
+interface DragPreview extends HorizontalSlot {
+  i: string;
+  y: number;
+}
+
+function findHorizontalSlot(
+  layout: Layout,
+  itemId: string,
+  y: number,
+  h: number,
+  anchorColumn: number,
+  columns: number,
+): HorizontalSlot | null {
+  const droppedItem = layout.find((item) => item.i === itemId);
+
+  if (!droppedItem) {
+    return null;
+  }
+
+  const candidate = { ...droppedItem, y, h };
+  const occupiedRanges = layout
+    .filter(
+      (item) => item.i !== itemId && verticallyOverlaps(candidate, item),
+    )
+    .map((item) => ({
+      start: Math.max(0, item.x),
+      end: Math.min(columns, item.x + item.w),
+    }))
+    .sort((first, second) => first.start - second.start);
+  const freeSlots: HorizontalSlot[] = [];
+  let cursor = 0;
+
+  for (const range of occupiedRanges) {
+    if (range.start > cursor) {
+      freeSlots.push({ x: cursor, w: range.start - cursor });
+    }
+
+    cursor = Math.max(cursor, range.end);
+  }
+
+  if (cursor < columns) {
+    freeSlots.push({ x: cursor, w: columns - cursor });
+  }
+
+  const minimumWidth = droppedItem.minW ?? 1;
+  const validSlots = freeSlots.filter((slot) => slot.w >= minimumWidth);
+
+  if (validSlots.length === 0) {
+    return null;
+  }
+
+  const selectedSlot = validSlots.find(
+    (slot) =>
+      anchorColumn >= slot.x && anchorColumn < slot.x + slot.w,
+  ) ?? validSlots.reduce((closestSlot, slot) => {
+    const closestDistance = Math.min(
+      Math.abs(anchorColumn - closestSlot.x),
+      Math.abs(anchorColumn - (closestSlot.x + closestSlot.w - 1)),
+    );
+    const slotDistance = Math.min(
+      Math.abs(anchorColumn - slot.x),
+      Math.abs(anchorColumn - (slot.x + slot.w - 1)),
+    );
+
+    return slotDistance < closestDistance ? slot : closestSlot;
+  });
+  const width = droppedItem.maxW
+    ? Math.min(selectedSlot.w, droppedItem.maxW)
+    : selectedSlot.w;
+
+  return {
+    x: Math.min(
+      Math.max(anchorColumn - Math.floor(width / 2), selectedSlot.x),
+      selectedSlot.x + selectedSlot.w - width,
+    ),
+    w: width,
+  };
+}
+
+function restoreDragLayout(
+  layout: Layout,
+  baseline: Layout,
+  preview: DragPreview,
+) {
+  const baselineItems = new Map(baseline.map((item) => [item.i, item]));
+
+  for (const item of layout) {
+    const baselineItem = baselineItems.get(item.i);
+
+    if (item.i === preview.i) {
+      item.x = preview.x;
+      item.y = preview.y;
+      item.w = preview.w;
+    } else if (baselineItem) {
+      item.x = baselineItem.x;
+      item.y = baselineItem.y;
+      item.w = baselineItem.w;
+      item.h = baselineItem.h;
+    }
+  }
+}
+
+function pointerColumn(
+  event: Event,
+  container: HTMLDivElement | null,
+  width: number,
+  columns: number,
+  horizontalGap: number,
+) {
+  const clientX = "clientX" in event &&
+    typeof event.clientX === "number"
+    ? event.clientX
+    : null;
+
+  if (clientX === null || !container) {
+    return null;
+  }
+
+  const relativeX = Math.min(
+    Math.max(clientX - container.getBoundingClientRect().left, 0),
+    Math.max(0, width - 1),
+  );
+  const columnStep = (width + horizontalGap) / columns;
+
+  return Math.min(
+    columns - 1,
+    Math.max(0, Math.floor(relativeX / columnStep)),
+  );
 }
 
 function copyGridItems(layout: Layout): PortfolioGridItem[] {
@@ -174,6 +328,8 @@ function PortfolioGrid({
     useState<PortfolioBreakpoint>("lg");
   const [autoHeightMeasurements, setAutoHeightMeasurements] =
     useState<AutoHeightMeasurements>({});
+  const dragBaselineRef = useRef<Layout | null>(null);
+  const dragPreviewRef = useRef<DragPreview | null>(null);
 
   const visibleBlocks = useMemo(
     () => document.blocks.filter((block) => block.visible),
@@ -276,6 +432,81 @@ function PortfolioGrid({
             handles: ["se"],
           }}
           onBreakpointChange={setBreakpoint}
+          onDragStart={(layout) => {
+            dragBaselineRef.current = copyGridItems(layout);
+            dragPreviewRef.current = null;
+          }}
+          onDrag={(layout, _oldItem, newItem, placeholder, event) => {
+            const baseline = dragBaselineRef.current;
+
+            if (!baseline || !newItem || !placeholder) {
+              return;
+            }
+
+            const columns = gridColumns[breakpoint];
+            const anchorColumn = pointerColumn(
+              event,
+              containerRef.current,
+              width,
+              columns,
+              gridMargins[breakpoint][0],
+            ) ?? Math.min(
+              columns - 1,
+              newItem.x + Math.floor(newItem.w / 2),
+            );
+            const slot = findHorizontalSlot(
+              baseline,
+              newItem.i,
+              newItem.y,
+              newItem.h,
+              anchorColumn,
+              columns,
+            );
+
+            if (!slot) {
+              return;
+            }
+
+            const preview = {
+              i: newItem.i,
+              x: slot.x,
+              y: newItem.y,
+              w: slot.w,
+            };
+
+            dragPreviewRef.current = preview;
+            restoreDragLayout(layout, baseline, preview);
+            placeholder.x = preview.x;
+            placeholder.y = preview.y;
+            placeholder.w = preview.w;
+          }}
+          onDragStop={(layout) => {
+            const baseline = dragBaselineRef.current;
+            const preview = dragPreviewRef.current;
+
+            if (baseline && preview) {
+              restoreDragLayout(layout, baseline, preview);
+              const compactedItems = new Map(
+                verticalCompactor
+                  .compact(layout, gridColumns[breakpoint])
+                  .map((item) => [item.i, item]),
+              );
+
+              for (const item of layout) {
+                const compactedItem = compactedItems.get(item.i);
+
+                if (compactedItem) {
+                  item.x = compactedItem.x;
+                  item.y = compactedItem.y;
+                  item.w = compactedItem.w;
+                  item.h = compactedItem.h;
+                }
+              }
+            }
+
+            dragBaselineRef.current = null;
+            dragPreviewRef.current = null;
+          }}
           onLayoutChange={handleLayoutChange}
         >
           {visibleBlocks.map((block) => {
@@ -335,10 +566,9 @@ function PortfolioGrid({
 
                 {hasAutoHeight ? (
                   <AutoHeightContent
+                    blockId={block.id}
                     editingInset={isEditing ? 20 : 0}
-                    onHeightChange={(height) => {
-                      handleAutoHeightChange(block.id, height);
-                    }}
+                    onHeightChange={handleAutoHeightChange}
                   >
                     {blockContent}
                   </AutoHeightContent>

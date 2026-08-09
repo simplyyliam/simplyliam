@@ -159,6 +159,32 @@
 - Typography decision: increase the edit-mode row gap between wrapped introduction and Skills fields so their highlights read as separate sentences.
 - Verification: production build, lint, diff checks, and generated CSS rule checks pass; verify dragging, banner resizing, equal bento gaps, and Publish in the existing authenticated browser session.
 
+## 2026-08-09 — Auto-fit section drops
+
+- Product goal: remove the manual resize step after placing a section into an open bento slot.
+- Drop decision: after drag release, find the contiguous horizontal free interval around the dropped section across every vertically overlapping neighbor and expand the section to fill that interval.
+- Constraint decision: respect each block's minimum and maximum width; a section dropped into an empty row expands to the full breakpoint width, while a section beside another fills only the remaining columns.
+- Layout decision: fit only the section the owner moved, preserving neighboring dimensions and avoiding surprising whole-page reflows.
+- Height decision: content-measured sections recalculate their intrinsic height after width expansion; Banner retains its manually selected height.
+- Persistence decision: the fitted width flows through the existing draft and Publish workflow.
+- Verification: run production build, lint, and diff checks, then verify full-row and beside-another drop cases in the authenticated browser.
+
+## 2026-08-09 — Auto-height observer loop fix
+
+- Root cause: each grid render created a new inline height callback, causing the synchronous measurement layout effect to rerun and feed another grid state update until React reached its maximum update depth.
+- Lifecycle decision: pass a stable block-aware measurement callback into each observer and deduplicate identical pixel heights inside the measured content component before updating React state.
+- Scope decision: preserve pixel-precise heights, auto-fit drops, and breakpoint-specific measurements; no layout data rollback is required.
+- Verification: run production build, lint, and diff checks, then re-enter edit mode and resize or drag a content section in the authenticated browser.
+
+## 2026-08-09 — Live slot-fitting drag preview
+
+- Root cause: post-drop fitting allowed the dragged section's old width to participate in collision handling, so large cards pushed neighbors and alternated between manual and fitted widths before release.
+- Interaction decision: snapshot neighboring geometry at drag start, select a free horizontal interval from the pointer column during drag, and resize both the active item and red placeholder to that interval before the grid commits its frame.
+- Stability decision: restore all non-dragged sections to their drag-start positions on every frame, preventing collision pushes from making the target slot oscillate.
+- Drop decision: compact and persist the exact geometry shown by the final placeholder; manual pre-resizing is unnecessary.
+- Constraint decision: only preview slots that satisfy the dragged section's minimum width, while respecting any maximum width.
+- Verification: run production build, lint, and diff checks, then drag a full-width section into a smaller open slot and confirm that neighbors remain still and the drop matches the preview.
+
 ## 2026-08-09 — Constrained role editing
 
 - Typography decision: inline text fields now expose an opt-in wrapping mode with a maximum width tied to their parent content column.

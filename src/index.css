@@ -137,10 +137,22 @@
     height: var(--portfolio-section-height) !important;
 }
 
+.portfolio-auto-height.portfolio-auto-height-editing {
+    height: auto !important;
+}
+
 .portfolio-manual-height:not(.resizing) {
     height: var(--portfolio-section-height) !important;
 }
 
-.portfolio-autofit-grid .react-grid-placeholder {
-    opacity: 0;
+.react-grid-item.react-grid-placeholder {
+    display: none !important;
+}
+
+.react-grid-item.portfolio-live-drag {
+    width: var(--portfolio-live-width) !important;
+    transform: translate(
+        calc(var(--portfolio-live-x) + var(--portfolio-live-offset-x)),
+        calc(var(--portfolio-live-y) + var(--portfolio-live-offset-y))
+    ) !important;
 }

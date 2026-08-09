@@ -180,6 +180,45 @@
 - Persistence, content editing, banner media, project data, visibility, reset, and publishing behavior are unchanged.
 - Verification: run lint, production build, and diff checks, then test live companion resizing, valid release, invalid release, and repeated drags in the authenticated browser.
 
+## 2026-08-09 — Complete prospective bento layouts
+
+- Product goal: make every drag frame accurately represent the entire layout that will be committed, including the dragged section, its source vacancy, and vertical insertion effects.
+- Dragged-surface decision: apply the fitted target position and width to the live dragged grid item, keeping it visually identical to the drop target rather than showing a canonical-size card over a smaller preview.
+- Insertion decision: treat empty vertical gaps as full-row insertion zones; sections at and below the boundary move down by the dragged section's height in the same preview.
+- Source-vacancy decision: identify every independent row overlapped by the dragged section at drag start and redistribute each row across the available columns after the section leaves.
+- Tall-section decision: a tall Banner removed from beside multiple stacked cards allows each vacated row to expand independently in realtime.
+- Constraint decision: preserve minimum and maximum widths when redistributing source rows or creating full-row insertion targets.
+- Persistence, content, visibility, reset, media, project data, and publishing behavior are unchanged.
+- Verification: run lint, production build, and diff checks, then test realtime target resizing, insertion between rows, tall-card source expansion, invalid targets, and repeated releases in the authenticated browser.
+
+## 2026-08-09 — Unified drag geometry
+
+- Root cause: the initial pointer position inside the dragged card was interpreted as an empty-row insertion because the hit test excluded that card, pushing the following section down as soon as dragging began.
+- Origin decision: while the pointer remains inside the drag-start bounds, preserve surrounding geometry and allow the library's ordinary pointer-following transform without creating an insertion target.
+- Transform decision: after a valid target is selected, apply the target's pixel x, y, and width to the dragged DOM element through one CSS override so the card and preview cannot diverge.
+- Placeholder decision: remove React Grid Layout's built-in red placeholder globally and retain one custom `#eee` target with a subtle neutral ring.
+- Motion decision: do not transition pointer-driven transform or width values, avoiding visual lag between the cursor and section.
+- Persistence, content, responsive constraints, source expansion, insertion, reset, media, projects, visibility, and publishing behavior are unchanged.
+- Verification: run lint, production build, and diff checks, then test drag start, target alignment, source restoration, insertion, release, and repeated drags in the authenticated browser.
+
+## 2026-08-09 — Theme-aware target and intrinsic edit height
+
+- Target visibility decision: use the shadcn `muted` surface token for the custom drop target and add a matching four-pixel outer ring so the target remains visible when the dragged card occupies identical bounds.
+- Theming decision: remove the hardcoded gray value so the future theme provider controls the drop affordance automatically.
+- Edit-height decision: let content-sized sections use their natural CSS height in edit mode, ensuring About and Projects outlines always contain their current inline-editor content.
+- Grid decision: retain measured grid rows for collision, compaction, persistence, and preview layout; only the editable card surface switches from a forced pixel height to intrinsic height.
+- Public rendering, drag geometry, insertion, source expansion, reset, media, projects, visibility, and publishing behavior are unchanged.
+- Verification: run lint, production build, and diff checks, then inspect target visibility and About/Projects content containment at narrow and wide edit widths.
+
+## 2026-08-09 — Optical drag-target separation
+
+- Product goal: reveal the destination's automatic scaling while keeping the dragged section visually connected to the highlighted target.
+- Offset decision: position the dragged surface eight pixels below its target and, for partial-width targets, eight pixels toward the canvas center.
+- Edge decision: keep full-width targets horizontally aligned to avoid unnecessary overflow beyond both canvas edges.
+- Motion decision: retain immediate pointer-driven transforms without easing or transition lag; the offset is constant and does not accumulate across frames.
+- Target geometry, collision handling, source expansion, insertion, persistence, intrinsic edit height, content, theming, reset, and publishing behavior are unchanged.
+- Verification: run lint, production build, and diff checks, then inspect left, right, and full-width drag targets in the authenticated browser.
+
 ## 2026-08-09 — Pixel-precise bento layout
 
 - Root cause: visible content-height cards were layered over a grid that still reserved coarse 60 px vertical steps, so the drag placeholder exposed a larger box and unused row remainder produced uneven gaps.

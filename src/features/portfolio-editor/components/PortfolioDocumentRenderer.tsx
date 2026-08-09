@@ -78,6 +78,15 @@ type AutoHeightMeasurements = Partial<
   >
 >;
 
+type PortfolioSectionStyle = CSSProperties & {
+  "--portfolio-section-height"?: string;
+  "--portfolio-live-x"?: string;
+  "--portfolio-live-y"?: string;
+  "--portfolio-live-width"?: string;
+  "--portfolio-live-offset-x"?: string;
+  "--portfolio-live-offset-y"?: string;
+};
+
 interface AutoHeightContentProps {
   blockId: string;
   children: ReactNode;
@@ -276,6 +285,17 @@ function pointerGridY(
   );
 }
 
+function pointerIsInsideItem(
+  item: PortfolioGridItem,
+  pointerY: number,
+  anchorColumn: number,
+) {
+  return anchorColumn >= item.x &&
+    anchorColumn < item.x + item.w &&
+    pointerY >= item.y &&
+    pointerY < item.y + Math.max(1, item.h - gridSectionGap);
+}
+
 function findBalancedRowPreview(
   layout: Layout,
   itemId: string,
@@ -360,6 +380,158 @@ function findBalancedRowPreview(
   };
 }
 
+function distributeRow(
+  items: Layout,
+  columns: number,
+): LayoutPlacement[] | null {
+  const orderedItems = [...items].sort((first, second) => first.x - second.x);
+  const baseWidth = Math.floor(columns / orderedItems.length);
+  const remainder = columns % orderedItems.length;
+  const widths = orderedItems.map((_, index) =>
+    baseWidth + (index < remainder ? 1 : 0)
+  );
+  const respectsConstraints = orderedItems.every((item, index) => {
+    const itemWidth = widths[index];
+    return itemWidth >= (item.minW ?? 1) &&
+      itemWidth <= (item.maxW ?? columns);
+  });
+
+  if (!respectsConstraints) {
+    return null;
+  }
+
+  const rowY = Math.min(...orderedItems.map((item) => item.y));
+  let x = 0;
+
+  return orderedItems.map((item, index) => {
+    const placement = {
+      i: item.i,
+      x,
+      y: rowY,
+      w: widths[index],
+    };
+    x += widths[index];
+    return placement;
+  });
+}
+
+function findSourceVacancyPlacements(
+  layout: Layout,
+  itemId: string,
+  columns: number,
+) {
+  const draggedItem = layout.find((item) => item.i === itemId);
+
+  if (!draggedItem) {
+    return [];
+  }
+
+  const sourceNeighbors = layout
+    .filter(
+      (item) => item.i !== itemId && verticallyOverlaps(draggedItem, item),
+    )
+    .sort((first, second) => first.y - second.y || first.x - second.x);
+  const rowGroups: Layout[] = [];
+
+  for (const item of sourceNeighbors) {
+    const rowGroupIndex = rowGroups.findIndex((group) =>
+      group.some((groupItem) => verticallyOverlaps(groupItem, item))
+    );
+
+    if (rowGroupIndex >= 0) {
+      rowGroups[rowGroupIndex] = [...rowGroups[rowGroupIndex], item];
+    } else {
+      rowGroups.push([item]);
+    }
+  }
+
+  return rowGroups.flatMap((group) => distributeRow(group, columns) ?? []);
+}
+
+function applyPlacements(
+  layout: Layout,
+  placements: LayoutPlacement[],
+) {
+  const placementById = new Map(
+    placements.map((placement) => [placement.i, placement]),
+  );
+
+  return layout.map((item) => {
+    const placement = placementById.get(item.i);
+    return placement
+      ? {
+          ...item,
+          x: placement.x,
+          y: placement.y,
+          w: placement.w,
+        }
+      : { ...item };
+  });
+}
+
+function mergePlacements(
+  ...placementGroups: LayoutPlacement[][]
+) {
+  const placements = new Map<string, LayoutPlacement>();
+
+  for (const group of placementGroups) {
+    for (const placement of group) {
+      placements.set(placement.i, placement);
+    }
+  }
+
+  return [...placements.values()];
+}
+
+function findVerticalInsertionPreview(
+  layout: Layout,
+  itemId: string,
+  pointerY: number,
+  columns: number,
+): DragPreview | null {
+  const draggedItem = layout.find((item) => item.i === itemId);
+  const otherItems = layout.filter((item) => item.i !== itemId);
+  const isInsideRow = otherItems.some(
+    (item) =>
+      pointerY >= item.y &&
+      pointerY < item.y + Math.max(1, item.h - gridSectionGap),
+  );
+
+  if (!draggedItem || isInsideRow) {
+    return null;
+  }
+
+  const nextRowY = otherItems
+    .map((item) => item.y)
+    .filter((y) => y > pointerY)
+    .sort((first, second) => first - second)[0];
+  const insertionY = nextRowY ?? otherItems.reduce(
+    (bottom, item) => Math.max(bottom, item.y + item.h),
+    0,
+  );
+  const width = Math.min(columns, draggedItem.maxW ?? columns);
+
+  if (width < (draggedItem.minW ?? 1)) {
+    return null;
+  }
+
+  return {
+    i: itemId,
+    x: Math.floor((columns - width) / 2),
+    y: insertionY,
+    w: width,
+    h: draggedItem.h,
+    companions: otherItems
+      .filter((item) => item.y >= insertionY)
+      .map((item) => ({
+        i: item.i,
+        x: item.x,
+        y: item.y + draggedItem.h,
+        w: item.w,
+      })),
+  };
+}
+
 const freeDragCompactor = {
   ...verticalCompactor,
   allowOverlap: true,
@@ -411,28 +583,28 @@ function applyLiveCompanionLayout(
   preview: DragPreview | null,
 ) {
   const baselineItems = new Map(baseline.map((item) => [item.i, item]));
-  const companionPlacements = new Map(
-    (preview?.companions ?? []).map((placement) => [
+  const livePlacements = new Map(
+    (preview ? [preview, ...preview.companions] : []).map((placement) => [
       placement.i,
       placement,
     ]),
   );
 
   for (const item of layout) {
-    if (item.i === draggedItemId) {
+    if (item.i === draggedItemId && !preview) {
       continue;
     }
 
     const baselineItem = baselineItems.get(item.i);
-    const companionPlacement = companionPlacements.get(item.i);
+    const livePlacement = livePlacements.get(item.i);
 
     if (!baselineItem) {
       continue;
     }
 
-    item.x = companionPlacement?.x ?? baselineItem.x;
-    item.y = companionPlacement?.y ?? baselineItem.y;
-    item.w = companionPlacement?.w ?? baselineItem.w;
+    item.x = livePlacement?.x ?? baselineItem.x;
+    item.y = livePlacement?.y ?? baselineItem.y;
+    item.w = livePlacement?.w ?? baselineItem.w;
     item.h = baselineItem.h;
   }
 }
@@ -647,7 +819,7 @@ function PortfolioGrid({
             return (
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute z-0 rounded-2xl bg-destructive/20 ring-1 ring-destructive/25"
+                className="pointer-events-none absolute z-0 rounded-2xl bg-muted ring-4 ring-muted"
                 style={{
                   left: dragPreview.x * (columnWidth + horizontalGap),
                   top: dragPreview.y,
@@ -711,27 +883,19 @@ function PortfolioGrid({
               event,
               containerRef.current,
             );
-            const balancedPreview = pointerY === null
-              ? null
-              : findBalancedRowPreview(
-                  baseline,
-                  newItem.i,
-                  pointerY,
-                  anchorColumn,
-                  columns,
-                );
-            const slot = balancedPreview
-              ? null
-              : findHorizontalSlot(
-                  baseline,
-                  newItem.i,
-                  newItem.y,
-                  newItem.h,
-                  anchorColumn,
-                  columns,
-                );
+            const draggedBaselineItem = baseline.find(
+              (item) => item.i === newItem.i,
+            );
 
-            if (!balancedPreview && !slot) {
+            if (
+              pointerY !== null &&
+              draggedBaselineItem &&
+              pointerIsInsideItem(
+                draggedBaselineItem,
+                pointerY,
+                anchorColumn,
+              )
+            ) {
               applyLiveCompanionLayout(
                 layout,
                 baseline,
@@ -743,13 +907,71 @@ function PortfolioGrid({
               return;
             }
 
-            const initialPreview: DragPreview = balancedPreview ?? {
+            const sourcePlacements = findSourceVacancyPlacements(
+              baseline,
+              newItem.i,
+              columns,
+            );
+            const placementBaseline = applyPlacements(
+              baseline,
+              sourcePlacements,
+            );
+            const balancedPreview = pointerY === null
+              ? null
+              : findBalancedRowPreview(
+                  placementBaseline,
+                  newItem.i,
+                  pointerY,
+                  anchorColumn,
+                  columns,
+                );
+            const insertionPreview =
+              pointerY === null || balancedPreview
+                ? null
+                : findVerticalInsertionPreview(
+                    placementBaseline,
+                    newItem.i,
+                    pointerY,
+                    columns,
+                  );
+            const slot = balancedPreview || insertionPreview
+              ? null
+              : findHorizontalSlot(
+                  placementBaseline,
+                  newItem.i,
+                  newItem.y,
+                  newItem.h,
+                  anchorColumn,
+                  columns,
+                );
+
+            if (!balancedPreview && !insertionPreview && !slot) {
+              applyLiveCompanionLayout(
+                layout,
+                baseline,
+                newItem.i,
+                null,
+              );
+              dragPreviewRef.current = null;
+              setDragPreview(null);
+              return;
+            }
+
+            const targetPreview: DragPreview =
+              balancedPreview ?? insertionPreview ?? {
               i: newItem.i,
               x: slot!.x,
               y: newItem.y,
               w: slot!.w,
               h: newItem.h,
               companions: [],
+            };
+            const initialPreview = {
+              ...targetPreview,
+              companions: mergePlacements(
+                sourcePlacements,
+                targetPreview.companions,
+              ).filter((placement) => placement.i !== newItem.i),
             };
             const compactedItem = fitAndCompactLayout(
               baseline,
@@ -853,28 +1075,52 @@ function PortfolioGrid({
               (layoutItem
                 ? Math.max(1, layoutItem.h - gridSectionGap)
                 : undefined);
+            const isLiveDraggedBlock = dragPreview?.i === block.id;
+            const sectionStyle: PortfolioSectionStyle = {};
+
+            if (visibleHeight) {
+              sectionStyle["--portfolio-section-height"] = `${visibleHeight}px`;
+            }
+
+            if (isLiveDraggedBlock && dragPreview) {
+              const columns = gridColumns[breakpoint];
+              const horizontalGap = gridMargins[breakpoint][0];
+              const columnWidth =
+                (width - horizontalGap * (columns - 1)) / columns;
+
+              sectionStyle["--portfolio-live-x"] =
+                `${dragPreview.x * (columnWidth + horizontalGap)}px`;
+              sectionStyle["--portfolio-live-y"] =
+                `${dragPreview.y}px`;
+              sectionStyle["--portfolio-live-width"] =
+                `${
+                  dragPreview.w * columnWidth +
+                  (dragPreview.w - 1) * horizontalGap
+                }px`;
+              sectionStyle["--portfolio-live-offset-x"] =
+                dragPreview.w === columns
+                  ? "0px"
+                  : dragPreview.x + dragPreview.w / 2 >= columns / 2
+                    ? "-8px"
+                    : "8px";
+              sectionStyle["--portfolio-live-offset-y"] = "8px";
+            }
 
             return (
               <div
-                className={
+                className={`${
                   hasAutoHeight
                     ? isEditing
-                      ? "portfolio-auto-height group/block @container/block rounded-2xl p-2.5 outline outline-1 outline-border"
+                      ? "portfolio-auto-height portfolio-auto-height-editing group/block @container/block rounded-2xl p-2.5 outline outline-1 outline-border"
                       : "portfolio-auto-height"
                     : isEditing
                       ? block.type === "banner"
                         ? "portfolio-manual-height group/block overflow-hidden rounded-2xl outline outline-1 outline-border"
                         : "group/block rounded-2xl p-2.5 outline outline-1 outline-border"
                       : "portfolio-manual-height"
-                }
+                }${isLiveDraggedBlock ? " portfolio-live-drag" : ""}`}
                 key={block.id}
-                style={
-                  visibleHeight
-                    ? ({
-                        "--portfolio-section-height": `${visibleHeight}px`,
-                      } as CSSProperties)
-                    : undefined
-                }
+                style={sectionStyle}
               >
                 {isEditing && (
                   <Button

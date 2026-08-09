@@ -232,6 +232,17 @@
 - Portfolio editor layout, banner media, inline text editing, reset, publishing, and section drag behavior are unchanged.
 - Verification: apply the migration, run lint and production build, then test public grouping plus authenticated create/edit flows with avatar visibility both enabled and disabled.
 
+## 2026-08-09 — Fluid terminal drops and project deletion
+
+- Product goal: make the final empty canvas area a dependable drop destination, soften the section landing motion, improve target legibility, and let the owner remove obsolete projects without code changes.
+- Drop-zone decision: treat pointer positions below the last visible section as an explicit full-width terminal insertion target derived from the immutable drag-start layout, independent of the grid library's clamped dragged coordinates.
+- Motion decision: keep pointer-driven transforms transition-free, then animate settled section position and size with an interruptible, zero-bounce 320 ms curve. Reduced-motion users receive an immediate placement.
+- Target decision: retain the theme-aware muted preview surface and increase the dragged-card optical offset from 8 px to 16 px so automatic fitting remains visible without disconnecting the card from its destination.
+- Project control inventory: the existing edit dialog gains a destructive Delete project action with a separate confirmation alert. Successful deletion removes the row from grouped client state immediately.
+- Data decision: permanently delete the project row, then best-effort remove its stored avatar. Supabase DELETE permission and an owner-only RLS policy protect the operation.
+- Persistence: layout changes continue through the existing draft/publish flow; project deletion is immediate because projects remain specialized Supabase records outside the portfolio document.
+- Verification: run diff checks, lint, and the production build; then test terminal drops, interrupted/repeated drags, reduced motion, deletion cancellation, deletion confirmation, avatar cleanup, and public project visibility.
+
 ## 2026-08-09 — Pixel-precise bento layout
 
 - Root cause: visible content-height cards were layered over a grid that still reserved coarse 60 px vertical steps, so the drag placeholder exposed a larger box and unused row remainder produced uneven gaps.

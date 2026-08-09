@@ -4,18 +4,21 @@ import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { motion } from "motion/react";
 import type { PortfolioProject } from "../types/project";
+import { ProjectDeleteButton } from "./ProjectDeleteButton";
 import { ProjectDialog } from "./ProjectDialog";
 
 interface ProjectProps {
   project: PortfolioProject;
   adminUserId?: string;
   onProjectSaved: (project: PortfolioProject) => void;
+  onProjectDeleted: (projectId: string) => void;
 }
 
 export function Project({
   project,
   adminUserId,
   onProjectSaved,
+  onProjectDeleted,
 }: ProjectProps) {
   const showAvatar = project.show_avatar;
 
@@ -26,7 +29,7 @@ export function Project({
       animate="rest"
       className={cn(
         "group/project relative flex min-w-0 items-center gap-2 rounded-lg",
-        adminUserId && "sm:pr-9",
+        adminUserId && "sm:pr-14",
         !showAvatar &&
           "-mx-2 px-2 transition-colors duration-200 hover:bg-muted/70",
       )}
@@ -115,15 +118,19 @@ export function Project({
 
       {adminUserId && (
         <>
-          <div className="shrink-0 sm:hidden">
+          <div className="flex shrink-0 items-center gap-0.5 sm:hidden">
             <ProjectDialog
               adminUserId={adminUserId}
               project={project}
               onProjectSaved={onProjectSaved}
             />
+            <ProjectDeleteButton
+              project={project}
+              onProjectDeleted={onProjectDeleted}
+            />
           </div>
           <motion.div
-            className="absolute right-0 hidden sm:block"
+            className="absolute right-0 hidden items-center gap-0.5 sm:flex"
             variants={{
               rest: {
                 scale: 0.25,
@@ -150,6 +157,10 @@ export function Project({
               adminUserId={adminUserId}
               project={project}
               onProjectSaved={onProjectSaved}
+            />
+            <ProjectDeleteButton
+              project={project}
+              onProjectDeleted={onProjectDeleted}
             />
           </motion.div>
         </>

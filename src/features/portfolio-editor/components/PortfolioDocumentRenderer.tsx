@@ -491,6 +491,21 @@ function findVerticalInsertionPreview(
 ): DragPreview | null {
   const draggedItem = layout.find((item) => item.i === itemId);
   const otherItems = layout.filter((item) => item.i !== itemId);
+  const otherItemsById = new Map(otherItems.map((item) => [item.i, item]));
+  const compactedOtherItems = verticalCompactor.compact(
+    otherItems.map((item) => ({ ...item })),
+    columns,
+  );
+  const finalVisibleBottom = otherItems.reduce(
+    (bottom, item) =>
+      Math.max(bottom, item.y + Math.max(1, item.h - gridSectionGap)),
+    0,
+  );
+  const finalLayoutBottom = compactedOtherItems.reduce(
+    (bottom, item) => Math.max(bottom, item.y + item.h),
+    0,
+  );
+  const isTerminalDrop = pointerY >= finalVisibleBottom;
   const isInsideRow = otherItems.some(
     (item) =>
       pointerY >= item.y &&
@@ -501,14 +516,13 @@ function findVerticalInsertionPreview(
     return null;
   }
 
-  const nextRowY = otherItems
-    .map((item) => item.y)
-    .filter((y) => y > pointerY)
-    .sort((first, second) => first - second)[0];
-  const insertionY = nextRowY ?? otherItems.reduce(
-    (bottom, item) => Math.max(bottom, item.y + item.h),
-    0,
-  );
+  const nextRowY = isTerminalDrop
+    ? undefined
+    : otherItems
+        .map((item) => item.y)
+        .filter((y) => y > pointerY)
+        .sort((first, second) => first - second)[0];
+  const insertionY = nextRowY ?? finalLayoutBottom;
   const width = Math.min(columns, draggedItem.maxW ?? columns);
 
   if (width < (draggedItem.minW ?? 1)) {
@@ -521,14 +535,26 @@ function findVerticalInsertionPreview(
     y: insertionY,
     w: width,
     h: draggedItem.h,
-    companions: otherItems
-      .filter((item) => item.y >= insertionY)
-      .map((item) => ({
-        i: item.i,
-        x: item.x,
-        y: item.y + draggedItem.h,
-        w: item.w,
-      })),
+    companions: isTerminalDrop
+      ? compactedOtherItems
+          .filter((item) => {
+            const originalItem = otherItemsById.get(item.i);
+            return originalItem && item.y !== originalItem.y;
+          })
+          .map((item) => ({
+            i: item.i,
+            x: item.x,
+            y: item.y,
+            w: item.w,
+          }))
+      : otherItems
+          .filter((item) => item.y >= insertionY)
+          .map((item) => ({
+            i: item.i,
+            x: item.x,
+            y: item.y + draggedItem.h,
+            w: item.w,
+          })),
   };
 }
 
@@ -560,8 +586,59 @@ function fitAndCompactLayout(
         }
       : { ...item }
   );
+  const pinnedLayout = fittedLayout.map((item) =>
+    item.i === preview.i ? { ...item, static: true } : item
+  );
+  const compactedLayout = verticalCompactor.compact(pinnedLayout, columns);
+  const originalDraggedItem = baseline.find((item) => item.i === preview.i);
 
-  return verticalCompactor.compact(fittedLayout, columns);
+  return compactedLayout.map((item) => {
+    if (item.i !== preview.i) {
+      return item;
+    }
+
+    const { static: _pinned, ...draggedItem } = item;
+    return originalDraggedItem?.static
+      ? { ...draggedItem, static: true }
+      : draggedItem;
+  });
+}
+
+function completeDragPreview(
+  baseline: Layout,
+  preview: DragPreview,
+  columns: number,
+): DragPreview {
+  const finalLayout = fitAndCompactLayout(baseline, preview, columns);
+  const baselineItems = new Map(baseline.map((item) => [item.i, item]));
+  const draggedItem = finalLayout.find((item) => item.i === preview.i);
+
+  if (!draggedItem) {
+    return preview;
+  }
+
+  return {
+    i: draggedItem.i,
+    x: draggedItem.x,
+    y: draggedItem.y,
+    w: draggedItem.w,
+    h: draggedItem.h,
+    companions: finalLayout
+      .filter((item) => item.i !== preview.i)
+      .filter((item) => {
+        const baselineItem = baselineItems.get(item.i);
+        return baselineItem &&
+          (item.x !== baselineItem.x ||
+            item.y !== baselineItem.y ||
+            item.w !== baselineItem.w);
+      })
+      .map((item) => ({
+        i: item.i,
+        x: item.x,
+        y: item.y,
+        w: item.w,
+      })),
+  };
 }
 
 function dragPreviewsMatch(
@@ -973,14 +1050,11 @@ function PortfolioGrid({
                 targetPreview.companions,
               ).filter((placement) => placement.i !== newItem.i),
             };
-            const compactedItem = fitAndCompactLayout(
+            const preview = completeDragPreview(
               baseline,
               initialPreview,
               columns,
-            ).find((item) => item.i === newItem.i);
-            const preview = compactedItem
-              ? { ...initialPreview, y: compactedItem.y }
-              : initialPreview;
+            );
 
             applyLiveCompanionLayout(
               layout,
@@ -1101,9 +1175,9 @@ function PortfolioGrid({
                 dragPreview.w === columns
                   ? "0px"
                   : dragPreview.x + dragPreview.w / 2 >= columns / 2
-                    ? "-8px"
-                    : "8px";
-              sectionStyle["--portfolio-live-offset-y"] = "8px";
+                    ? "-16px"
+                    : "16px";
+              sectionStyle["--portfolio-live-offset-y"] = "16px";
             }
 
             return (

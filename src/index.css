@@ -156,3 +156,21 @@
         calc(var(--portfolio-live-y) + var(--portfolio-live-offset-y))
     ) !important;
 }
+
+.portfolio-autofit-grid > .react-grid-item {
+    transition-property: transform, width, height;
+    transition-duration: 320ms;
+    transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.portfolio-autofit-grid > .react-grid-item.react-draggable-dragging,
+.portfolio-autofit-grid > .react-grid-item.resizing,
+.portfolio-autofit-grid > .react-grid-item.portfolio-live-drag {
+    transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .portfolio-autofit-grid > .react-grid-item {
+        transition-duration: 0ms;
+    }
+}

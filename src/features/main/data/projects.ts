@@ -68,6 +68,23 @@ export async function updateProject(
   return data as PortfolioProject;
 }
 
+export async function deleteProject(id: string) {
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const { error } = await supabase
+    .from("projects")
+    .delete()
+    .eq("id", id)
+    .select("id")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function uploadProjectAvatar(
   file: File,
   userId: string,

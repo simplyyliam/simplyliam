@@ -70,6 +70,12 @@ export function ProjectsSection({
     });
   }
 
+  function handleProjectDeleted(projectId: string) {
+    setProjects((currentProjects) =>
+      currentProjects.filter((project) => project.id !== projectId)
+    );
+  }
+
   return (
     <section
       className={`flex w-full flex-col gap-5 px-4 sm:px-0 ${
@@ -112,6 +118,7 @@ export function ProjectsSection({
                     project={project}
                     adminUserId={adminUserId}
                     onProjectSaved={handleProjectSaved}
+                    onProjectDeleted={handleProjectDeleted}
                   />
                 ))}
               </div>

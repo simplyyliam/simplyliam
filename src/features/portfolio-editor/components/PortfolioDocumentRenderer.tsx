@@ -2,7 +2,16 @@ import { useAdminSession } from "@/features/main/hooks/useAdminSession";
 import { Button } from "@/components/ui/button";
 import { DragDropIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import {
   Responsive,
   type Layout,
@@ -38,6 +47,83 @@ const gridColumns: Record<PortfolioBreakpoint, number> = {
   md: 6,
   sm: 1,
 };
+
+const gridRowHeight = 44;
+
+const gridMargins: Record<PortfolioBreakpoint, [number, number]> = {
+  lg: [12, 16],
+  md: [10, 16],
+  sm: [0, 16],
+};
+
+const autoHeightBlockTypes = new Set<PortfolioBlock["type"]>([
+  "about",
+  "projects",
+]);
+
+interface AutoHeightMeasurement {
+  height: number;
+  rows: number;
+}
+
+type AutoHeightMeasurements = Partial<
+  Record<
+    PortfolioBreakpoint,
+    Record<string, AutoHeightMeasurement>
+  >
+>;
+
+interface AutoHeightContentProps {
+  children: ReactNode;
+  editingInset: number;
+  onHeightChange: (height: number) => void;
+}
+
+function AutoHeightContent({
+  children,
+  editingInset,
+  onHeightChange,
+}: AutoHeightContentProps) {
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const content = contentRef.current;
+
+    if (!content) {
+      return;
+    }
+
+    const measure = () => {
+      onHeightChange(content.scrollHeight + editingInset);
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(content);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [editingInset, onHeightChange]);
+
+  return (
+    <div ref={contentRef} className="w-full">
+      {children}
+    </div>
+  );
+}
+
+function rowsForHeight(height: number, breakpoint: PortfolioBreakpoint) {
+  const verticalMargin = gridMargins[breakpoint][1];
+
+  return Math.max(
+    1,
+    Math.ceil(
+      (Math.ceil(height) + verticalMargin) /
+        (gridRowHeight + verticalMargin),
+    ),
+  );
+}
 
 function copyGridItems(layout: Layout): PortfolioGridItem[] {
   return layout.map(({ i, x, y, w, h, minW, minH, maxW, maxH }) => ({
@@ -90,10 +176,78 @@ function PortfolioGrid({
   });
   const [breakpoint, setBreakpoint] =
     useState<PortfolioBreakpoint>("lg");
+  const [autoHeightMeasurements, setAutoHeightMeasurements] =
+    useState<AutoHeightMeasurements>({});
 
   const visibleBlocks = useMemo(
     () => document.blocks.filter((block) => block.visible),
     [document.blocks],
+  );
+
+  const autoHeightBlockIds = useMemo(
+    () =>
+      new Set(
+        document.blocks
+          .filter((block) => autoHeightBlockTypes.has(block.type))
+          .map((block) => block.id),
+      ),
+    [document.blocks],
+  );
+
+  const renderedLayouts = useMemo<
+    ResponsiveLayouts<PortfolioBreakpoint>
+  >(() => {
+    const applyAutoHeights = (layout: PortfolioGridItem[], currentBreakpoint: PortfolioBreakpoint) =>
+      layout.map((item) => {
+        if (!autoHeightBlockIds.has(item.i)) {
+          return item;
+        }
+
+        return {
+          ...item,
+          h:
+            autoHeightMeasurements[currentBreakpoint]?.[item.i]?.rows ??
+            item.h,
+          minH: 1,
+          maxH: undefined,
+          isResizable: false,
+        };
+      });
+
+    return {
+      lg: applyAutoHeights(document.layouts.lg, "lg"),
+      md: applyAutoHeights(document.layouts.md, "md"),
+      sm: applyAutoHeights(document.layouts.sm, "sm"),
+    };
+  }, [autoHeightBlockIds, autoHeightMeasurements, document.layouts]);
+
+  const handleAutoHeightChange = useCallback(
+    (blockId: string, height: number) => {
+      const rows = rowsForHeight(height, breakpoint);
+
+      const measuredHeight = Math.ceil(height);
+
+      setAutoHeightMeasurements((currentMeasurements) => {
+        const currentMeasurement =
+          currentMeasurements[breakpoint]?.[blockId];
+
+        if (
+          currentMeasurement?.height === measuredHeight &&
+          currentMeasurement.rows === rows
+        ) {
+          return currentMeasurements;
+        }
+
+        return {
+          ...currentMeasurements,
+          [breakpoint]: {
+            ...currentMeasurements[breakpoint],
+            [blockId]: { height: measuredHeight, rows },
+          },
+        };
+      });
+    },
+    [breakpoint],
   );
 
   const handleLayoutChange = useCallback(
@@ -110,11 +264,11 @@ function PortfolioGrid({
       {mounted && (
         <Responsive<PortfolioBreakpoint>
           width={width}
-          layouts={document.layouts}
+          layouts={renderedLayouts}
           breakpoints={gridBreakpoints}
           cols={gridColumns}
-          rowHeight={44}
-          margin={{ lg: [12, 16], md: [10, 16], sm: [0, 16] }}
+          rowHeight={gridRowHeight}
+          margin={gridMargins}
           containerPadding={null}
           dragConfig={{
             enabled: isEditing,
@@ -127,46 +281,77 @@ function PortfolioGrid({
           onBreakpointChange={setBreakpoint}
           onLayoutChange={handleLayoutChange}
         >
-          {visibleBlocks.map((block) => (
-            <div
-              className={
-                isEditing
-                  ? "group/block rounded-2xl p-2.5 outline outline-1 outline-border"
-                  : undefined
-              }
-              key={block.id}
-            >
-              {isEditing && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="portfolio-drag-handle absolute top-2 right-2 z-20 cursor-grab capitalize shadow-sm backdrop-blur active:cursor-grabbing"
-                  aria-label={`Move ${block.type} section`}
-                >
-                  <HugeiconsIcon
-                    icon={DragDropIcon}
-                    strokeWidth={2}
-                    data-icon="inline-start"
-                  />
-                  {block.type}
-                </Button>
-              )}
+          {visibleBlocks.map((block) => {
+            const blockContent = renderPortfolioBlock(block, {
+              isEditing,
+              onBlockChange,
+            });
+            const hasAutoHeight = autoHeightBlockIds.has(block.id);
+            const measuredHeight =
+              autoHeightMeasurements[breakpoint]?.[block.id]?.height;
 
+            return (
               <div
                 className={
-                  isEditing
-                    ? "size-full overflow-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                    : "size-full overflow-visible"
+                  hasAutoHeight
+                    ? isEditing
+                      ? "portfolio-auto-height group/block rounded-2xl p-2.5 outline outline-1 outline-border"
+                      : "portfolio-auto-height"
+                    : isEditing
+                      ? block.type === "banner"
+                        ? "group/block overflow-hidden rounded-2xl outline outline-1 outline-border"
+                        : "group/block rounded-2xl p-2.5 outline outline-1 outline-border"
+                      : undefined
+                }
+                key={block.id}
+                style={
+                  measuredHeight
+                    ? ({
+                        "--portfolio-auto-height": `${measuredHeight}px`,
+                      } as CSSProperties)
+                    : undefined
                 }
               >
-                {renderPortfolioBlock(block, {
-                  isEditing,
-                  onBlockChange,
-                })}
+                {isEditing && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="portfolio-drag-handle absolute top-2 right-2 z-20 cursor-grab capitalize shadow-sm backdrop-blur active:cursor-grabbing"
+                    aria-label={`Move ${block.type} section`}
+                  >
+                    <HugeiconsIcon
+                      icon={DragDropIcon}
+                      strokeWidth={2}
+                      data-icon="inline-start"
+                    />
+                    {block.type}
+                  </Button>
+                )}
+
+                {hasAutoHeight ? (
+                  <AutoHeightContent
+                    editingInset={isEditing ? 20 : 0}
+                    onHeightChange={(height) => {
+                      handleAutoHeightChange(block.id, height);
+                    }}
+                  >
+                    {blockContent}
+                  </AutoHeightContent>
+                ) : (
+                  <div
+                    className={
+                      isEditing
+                        ? "size-full overflow-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                        : "size-full overflow-visible"
+                    }
+                  >
+                    {blockContent}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </Responsive>
       )}
     </div>

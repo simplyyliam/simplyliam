@@ -132,3 +132,7 @@
     @apply font-sans antialiased;
     }
 }
+
+.portfolio-auto-height {
+    height: var(--portfolio-auto-height) !important;
+}

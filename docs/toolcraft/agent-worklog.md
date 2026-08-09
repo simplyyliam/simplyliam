@@ -132,3 +132,18 @@
 - Focus decision: remove the inline editors' focus rings; the caret, editable highlight, and text selection continue to communicate editing state without adding another border.
 - Spacing decision: increase the intro-to-role gap only in edit mode to offset the editable fields' negative margins and restore a natural sentence space. Published spacing remains unchanged.
 - Verification: lint and the production build pass.
+
+## 2026-08-09 — Content-hugging portfolio sections
+
+- Product goal: remove fixed-height whitespace from About and Projects in both edit and preview modes, while letting those sections grow as their content changes.
+- Renderer decision: measure intrinsic section content with `ResizeObserver`, convert it to responsive grid rows for collision and compaction, and apply the exact measured pixel height to the visible section surface.
+- Control inventory: About and Projects are content-sized and no longer manually resizable; Banner keeps its fixed, user-resizable media height. All sections remain draggable in edit mode.
+- Responsive decision: store measurements independently for each active breakpoint so text wrapping and mobile project rows produce the correct height at their own widths.
+- Persistence decision: grid row measurements flow through the existing draft layout updates in edit mode; preview mode derives the same content height without mutating the published document.
+- Verification: production build, lint, and diff checks pass. Authenticated drag and resize behavior requires a final refresh in the existing signed-in browser session.
+
+## 2026-08-09 — Edge-to-edge banner editing surface
+
+- Surface decision: remove the edit-mode content inset from Banner only, allowing visual media to fill the draggable section boundary while retaining its rounded clipping and section outline.
+- Scope decision: About and Projects keep their 10 px editing inset for text readability.
+- Verification: run lint, production build, and diff checks.

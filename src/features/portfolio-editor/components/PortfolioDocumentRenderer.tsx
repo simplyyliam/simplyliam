@@ -15,6 +15,7 @@ import {
 import {
   Responsive,
   type Layout,
+  type ResizeHandleAxis,
   type ResponsiveLayouts,
   useContainerWidth,
 } from "react-grid-layout";
@@ -48,18 +49,21 @@ const gridColumns: Record<PortfolioBreakpoint, number> = {
   sm: 1,
 };
 
-const gridRowHeight = 44;
+const gridRowHeight = 1;
+const gridSectionGap = 16;
 
 const gridMargins: Record<PortfolioBreakpoint, [number, number]> = {
-  lg: [12, 16],
-  md: [10, 16],
-  sm: [0, 16],
+  lg: [gridSectionGap, 0],
+  md: [gridSectionGap, 0],
+  sm: [0, 0],
 };
 
 const autoHeightBlockTypes = new Set<PortfolioBlock["type"]>([
   "about",
   "projects",
 ]);
+
+const horizontalResizeHandles: ResizeHandleAxis[] = ["e", "w"];
 
 interface AutoHeightMeasurement {
   height: number;
@@ -113,16 +117,8 @@ function AutoHeightContent({
   );
 }
 
-function rowsForHeight(height: number, breakpoint: PortfolioBreakpoint) {
-  const verticalMargin = gridMargins[breakpoint][1];
-
-  return Math.max(
-    1,
-    Math.ceil(
-      (Math.ceil(height) + verticalMargin) /
-        (gridRowHeight + verticalMargin),
-    ),
-  );
+function rowsForHeight(height: number) {
+  return Math.max(1, Math.ceil(height) + gridSectionGap);
 }
 
 function copyGridItems(layout: Layout): PortfolioGridItem[] {
@@ -210,7 +206,8 @@ function PortfolioGrid({
             item.h,
           minH: 1,
           maxH: undefined,
-          isResizable: false,
+          isResizable: true,
+          resizeHandles: horizontalResizeHandles,
         };
       });
 
@@ -223,7 +220,7 @@ function PortfolioGrid({
 
   const handleAutoHeightChange = useCallback(
     (blockId: string, height: number) => {
-      const rows = rowsForHeight(height, breakpoint);
+      const rows = rowsForHeight(height);
 
       const measuredHeight = Math.ceil(height);
 
@@ -289,25 +286,32 @@ function PortfolioGrid({
             const hasAutoHeight = autoHeightBlockIds.has(block.id);
             const measuredHeight =
               autoHeightMeasurements[breakpoint]?.[block.id]?.height;
+            const layoutItem = renderedLayouts[breakpoint]?.find(
+              (item) => item.i === block.id,
+            );
+            const visibleHeight = measuredHeight ??
+              (layoutItem
+                ? Math.max(1, layoutItem.h - gridSectionGap)
+                : undefined);
 
             return (
               <div
                 className={
                   hasAutoHeight
                     ? isEditing
-                      ? "portfolio-auto-height group/block rounded-2xl p-2.5 outline outline-1 outline-border"
+                      ? "portfolio-auto-height group/block @container/block rounded-2xl p-2.5 outline outline-1 outline-border"
                       : "portfolio-auto-height"
                     : isEditing
                       ? block.type === "banner"
-                        ? "group/block overflow-hidden rounded-2xl outline outline-1 outline-border"
+                        ? "portfolio-manual-height group/block overflow-hidden rounded-2xl outline outline-1 outline-border"
                         : "group/block rounded-2xl p-2.5 outline outline-1 outline-border"
-                      : undefined
+                      : "portfolio-manual-height"
                 }
                 key={block.id}
                 style={
-                  measuredHeight
+                  visibleHeight
                     ? ({
-                        "--portfolio-auto-height": `${measuredHeight}px`,
+                        "--portfolio-section-height": `${visibleHeight}px`,
                       } as CSSProperties)
                     : undefined
                 }

@@ -69,7 +69,7 @@ export type PortfolioLayouts = Record<
 >;
 
 export interface PortfolioDocument {
-  schemaVersion: 1;
+  schemaVersion: 2;
   blocks: PortfolioBlock[];
   layouts: PortfolioLayouts;
 }

@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 interface InlineTextEditorProps {
   value: string;
   label: string;
+  allowWrap?: boolean;
   multiline?: boolean;
   onChange: (value: string) => void;
 }
@@ -11,6 +12,7 @@ interface InlineTextEditorProps {
 export function InlineTextEditor({
   value,
   label,
+  allowWrap = false,
   multiline = false,
   onChange,
 }: InlineTextEditorProps) {
@@ -38,8 +40,10 @@ export function InlineTextEditor({
       contentEditable
       suppressContentEditableWarning
       className={cn(
-        "min-w-8 rounded-md bg-muted/80 px-1.5 py-0.5 -mx-1.5 -my-0.5 caret-foreground outline-none selection:bg-neutral-400/50 selection:text-foreground transition-colors duration-150 empty:before:text-muted-foreground empty:before:content-['Type_something…'] focus-visible:bg-muted",
-        !multiline && "whitespace-nowrap",
+        "inline-block max-w-full min-w-8 rounded-md bg-muted/80 px-1.5 py-0.5 -mx-1.5 -my-0.5 caret-foreground outline-none selection:bg-neutral-400/50 selection:text-foreground transition-colors duration-150 empty:before:text-muted-foreground empty:before:content-['Type_something…'] focus-visible:bg-muted",
+        allowWrap
+          ? "wrap-break-word whitespace-normal"
+          : !multiline && "whitespace-nowrap",
       )}
       onFocus={() => {
         valueOnFocusRef.current = value;

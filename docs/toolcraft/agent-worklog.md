@@ -147,3 +147,39 @@
 - Surface decision: remove the edit-mode content inset from Banner only, allowing visual media to fill the draggable section boundary while retaining its rounded clipping and section outline.
 - Scope decision: About and Projects keep their 10 px editing inset for text readability.
 - Verification: run lint, production build, and diff checks.
+
+## 2026-08-09 — Pixel-precise bento layout
+
+- Root cause: visible content-height cards were layered over a grid that still reserved coarse 60 px vertical steps, so the drag placeholder exposed a larger box and unused row remainder produced uneven gaps.
+- Schema decision: move portfolio layouts to schema version 2 with 1 px vertical grid units. Parse schema version 1 documents by multiplying their vertical positions and constraints by 60, preserving the exact geometry of existing Supabase layouts.
+- Spacing decision: reserve a consistent 16 px trailing gap in every grid item's layout height and use the same 16 px horizontal gap on multi-column breakpoints.
+- Surface decision: render each section at its exact visible height; clip the drag placeholder's reserved gap so its highlight matches the section rather than the collision box.
+- Resize decision: content sections remain width-only resizable with measured heights; Banner releases its exact-height override during vertical resizing and reapplies the saved height afterward.
+- Persistence decision: no Supabase migration is required. Existing documents migrate in memory and are persisted as schema version 2 through the normal Publish action.
+- Typography decision: increase the edit-mode row gap between wrapped introduction and Skills fields so their highlights read as separate sentences.
+- Verification: production build, lint, diff checks, and generated CSS rule checks pass; verify dragging, banner resizing, equal bento gaps, and Publish in the existing authenticated browser session.
+
+## 2026-08-09 — Constrained role editing
+
+- Typography decision: inline text fields now expose an opt-in wrapping mode with a maximum width tied to their parent content column.
+- About decision: enable wrapping for the comma-separated role editor, allowing long skill text to reflow within a narrow About section instead of crossing its boundary.
+- Editing decision: Enter continues to finish short-field editing; wrapping is visual and does not change the stored comma-separated roles format.
+- Height decision: wrapped role text participates in the existing intrinsic About height measurement.
+- Control decision: narrow editable text sections reserve a compact top control row for the drag handle, preventing editor chrome from overlapping headings while leaving preview output untouched.
+- Verification: run lint, production build, and diff checks.
+
+## 2026-08-09 — Container-responsive About header
+
+- Product goal: keep About content inside a narrowed section without placing the role text beneath the profile avatars.
+- Layout decision: make the text group independently flexible and wrapping; the introduction remains an unbroken phrase while Skills moves to a second line aligned with the introduction when the combined row no longer fits.
+- Responsive decision: rely on available section width rather than viewport media queries, so drag-resized desktop blocks and mobile layouts share the same reflow behavior.
+- Height decision: the existing intrinsic-height observer grows the About section after the header wraps.
+- Verification: run lint, production build, and diff checks.
+
+## 2026-08-09 — Width-only resizing for content sections
+
+- Interaction decision: restore east and west resize handles for About and Projects while keeping their height controlled by intrinsic content measurement.
+- Constraint decision: preserve each section's existing `minW` grid constraint so it cannot be narrowed beyond a readable layout; mobile resizing remains disabled.
+- Reflow decision: as a section narrows or widens, `ResizeObserver` recalculates wrapped content height and the grid moves following sections automatically.
+- Persistence decision: resized widths continue through the existing draft and publish workflow; derived heights remain content-driven.
+- Verification: run lint, production build, and diff checks.

@@ -1,7 +1,7 @@
 import type { PortfolioDocument } from "../types/portfolio";
 
 export const defaultPortfolioDocument: PortfolioDocument = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   blocks: [
     {
       id: "about",
@@ -46,19 +46,19 @@ export const defaultPortfolioDocument: PortfolioDocument = {
   ],
   layouts: {
     lg: [
-      { i: "about", x: 0, y: 0, w: 12, h: 3, minW: 4, minH: 1 },
-      { i: "banner", x: 0, y: 3, w: 12, h: 6, minW: 4, minH: 4 },
-      { i: "projects", x: 0, y: 9, w: 12, h: 3, minW: 6, minH: 1 },
+      { i: "about", x: 0, y: 0, w: 12, h: 180, minW: 4, minH: 1 },
+      { i: "banner", x: 0, y: 180, w: 12, h: 360, minW: 4, minH: 240 },
+      { i: "projects", x: 0, y: 540, w: 12, h: 180, minW: 6, minH: 1 },
     ],
     md: [
-      { i: "about", x: 0, y: 0, w: 6, h: 3, minW: 3, minH: 1 },
-      { i: "banner", x: 0, y: 3, w: 6, h: 6, minW: 3, minH: 4 },
-      { i: "projects", x: 0, y: 9, w: 6, h: 3, minW: 3, minH: 1 },
+      { i: "about", x: 0, y: 0, w: 6, h: 180, minW: 3, minH: 1 },
+      { i: "banner", x: 0, y: 180, w: 6, h: 360, minW: 3, minH: 240 },
+      { i: "projects", x: 0, y: 540, w: 6, h: 180, minW: 3, minH: 1 },
     ],
     sm: [
-      { i: "about", x: 0, y: 0, w: 1, h: 4, minW: 1, minH: 1 },
-      { i: "banner", x: 0, y: 4, w: 1, h: 5, minW: 1, minH: 4 },
-      { i: "projects", x: 0, y: 9, w: 1, h: 3, minW: 1, minH: 1 },
+      { i: "about", x: 0, y: 0, w: 1, h: 240, minW: 1, minH: 1 },
+      { i: "banner", x: 0, y: 240, w: 1, h: 300, minW: 1, minH: 240 },
+      { i: "projects", x: 0, y: 540, w: 1, h: 180, minW: 1, minH: 1 },
     ],
   },
 };

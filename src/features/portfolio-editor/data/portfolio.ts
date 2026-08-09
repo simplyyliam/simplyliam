@@ -4,14 +4,14 @@ import type {
   PortfolioDocumentRecord,
   PortfolioDocumentStatus,
 } from "../types/portfolio";
-import { isPortfolioDocument } from "../validation/portfolio";
+import { parsePortfolioDocument } from "../validation/portfolio";
 import { defaultPortfolioDocument } from "./defaultPortfolio";
 
 interface PortfolioDocumentRow {
   id: string;
   page_id: string;
   status: PortfolioDocumentStatus;
-  document: PortfolioDocument;
+  document: unknown;
   revision: number;
   updated_at: string;
 }
@@ -22,7 +22,9 @@ const portfolioColumns =
 function mapPortfolioDocument(
   row: PortfolioDocumentRow,
 ): PortfolioDocumentRecord {
-  if (!isPortfolioDocument(row.document)) {
+  const document = parsePortfolioDocument(row.document);
+
+  if (!document) {
     throw new Error("The portfolio document has an invalid structure.");
   }
 
@@ -30,7 +32,7 @@ function mapPortfolioDocument(
     id: row.id,
     pageId: row.page_id,
     status: row.status,
-    document: row.document,
+    document,
     revision: row.revision,
     updatedAt: row.updated_at,
   };

@@ -134,5 +134,13 @@
 }
 
 .portfolio-auto-height {
-    height: var(--portfolio-auto-height) !important;
+    height: var(--portfolio-section-height) !important;
+}
+
+.portfolio-manual-height:not(.resizing) {
+    height: var(--portfolio-section-height) !important;
+}
+
+.react-grid-item.react-grid-placeholder {
+    clip-path: inset(0 0 16px 0 round var(--radius-2xl));
 }

@@ -58,7 +58,11 @@ export function ProjectsSection({
   }
 
   return (
-    <section className="flex w-full flex-col gap-5">
+    <section
+      className={`flex w-full flex-col gap-5 ${
+        headingEditor ? "@max-[28rem]/block:pt-9" : ""
+      }`}
+    >
       <div className="flex items-center gap-1 px-4 sm:px-0">
         <h2 className="font-medium">{headingEditor ?? heading}</h2>
         {adminUserId && (

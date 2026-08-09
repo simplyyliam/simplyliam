@@ -55,6 +55,7 @@ export const portfolioBlockRegistry: PortfolioBlockRegistry = {
         <InlineTextEditor
           value={block.content.roles.join(", ")}
           label="Rotating roles, separated by commas"
+          allowWrap
           onChange={(value) => {
             const roles = value
               .split(",")

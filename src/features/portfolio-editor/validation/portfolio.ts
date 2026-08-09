@@ -54,12 +54,10 @@ function isGridItem(value: unknown): value is PortfolioGridItem {
     typeof value.h === "number";
 }
 
-export function isPortfolioDocument(
-  value: unknown,
-): value is PortfolioDocument {
+function hasPortfolioDocumentStructure(value: unknown) {
   if (
     !isRecord(value) ||
-    value.schemaVersion !== 1 ||
+    (value.schemaVersion !== 1 && value.schemaVersion !== 2) ||
     !Array.isArray(value.blocks) ||
     !value.blocks.every(isPortfolioBlock) ||
     !isRecord(value.layouts)
@@ -73,4 +71,52 @@ export function isPortfolioDocument(
     const layout = layouts[breakpoint];
     return Array.isArray(layout) && layout.every(isGridItem);
   });
+}
+
+function migrateLegacyGridItem(item: PortfolioGridItem): PortfolioGridItem {
+  const legacyPixelStep = 60;
+
+  return {
+    ...item,
+    y: item.y * legacyPixelStep,
+    h: item.h * legacyPixelStep,
+    ...(item.minH === undefined
+      ? {}
+      : { minH: item.minH * legacyPixelStep }),
+    ...(item.maxH === undefined
+      ? {}
+      : { maxH: item.maxH * legacyPixelStep }),
+  };
+}
+
+export function parsePortfolioDocument(
+  value: unknown,
+): PortfolioDocument | null {
+  if (!hasPortfolioDocumentStructure(value)) {
+    return null;
+  }
+
+  const validatedDocument = value as Omit<
+    PortfolioDocument,
+    "schemaVersion"
+  > & { schemaVersion: 1 | 2 };
+
+  if (validatedDocument.schemaVersion === 2) {
+    return validatedDocument as PortfolioDocument;
+  }
+
+  const legacyDocument = validatedDocument as Omit<
+    PortfolioDocument,
+    "schemaVersion"
+  > & { schemaVersion: 1 };
+
+  return {
+    ...legacyDocument,
+    schemaVersion: 2,
+    layouts: {
+      lg: legacyDocument.layouts.lg.map(migrateLegacyGridItem),
+      md: legacyDocument.layouts.md.map(migrateLegacyGridItem),
+      sm: legacyDocument.layouts.sm.map(migrateLegacyGridItem),
+    },
+  };
 }

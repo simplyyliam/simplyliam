@@ -77,3 +77,25 @@
 - Resilience decision: render the seeded local document immediately, validate remote JSON at runtime, and retain the local document if loading or validation fails.
 - Layout decision: preserve the current responsive flex layout for this milestone; saved grid coordinates become active with the drag-and-resize editor milestone.
 - Verification: run lint and the production build, then inspect the Supabase-backed page at desktop and narrow viewport sizes in a real browser.
+
+## 2026-08-09 — Admin layout editing and publishing
+
+- Product goal: let the authenticated portfolio owner rearrange and resize sections directly on the page, then deliberately publish or discard the result.
+- Control inventory — access: the owner-only floating toolbar switches between preview and edit modes.
+- Control inventory — layout: each visible block gains a dedicated drag handle in edit mode; desktop and tablet blocks can be resized, while the one-column mobile layout supports ordering without horizontal resizing.
+- Control inventory — publishing: Publish writes the working document to both draft and published records; Discard restores the published document and synchronizes the draft record.
+- Responsive decision: activate saved 12-column, 6-column, and 1-column layouts using container-width breakpoints so the editor responds to the portfolio canvas rather than the full browser width.
+- Persistence decision: keep drag updates local until an explicit action. Revision-checked Supabase updates prevent silently overwriting a document changed in another browser session.
+- Feedback decision: disable destructive or repeated actions while saving and surface Supabase or revision errors beside the editor controls.
+- Layers, timeline, settings transfer, and export behavior remain unnecessary for this milestone. Inline rich-text controls remain a later milestone.
+- Verification: run lint and the production build, then verify public read-only rendering plus authenticated drag, resize, discard, and publish behavior in a real browser.
+
+## 2026-08-09 — Inline portfolio content editing
+
+- Product goal: edit portfolio copy in context without opening source files or a separate content-management screen.
+- Control inventory — short copy: introduction, rotating roles, project heading, empty-project message, and banner fallback label use lightweight content-editable fields.
+- Control inventory — biography: the biography uses a compact Tiptap editor with selection-based bold and italic controls and stores its output in the existing rich-text JSON document.
+- Control inventory — sections: a checkbox menu in the editor toolbar controls block visibility while preventing the final visible section from being hidden.
+- Rendering decision: public rich-text JSON is rendered by a small local renderer; the Tiptap editing bundle is lazy-loaded only after the owner enters edit mode.
+- State decision: all inline and visibility updates feed the same working portfolio document as grid changes, so Publish and Discard apply consistently to the entire edit session.
+- Verification: run lint and the production build, verify the editor bundle is code-split, then manually test selection formatting, visibility restoration, publishing, and mobile toolbar wrapping.

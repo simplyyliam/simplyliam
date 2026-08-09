@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { useAdminSession } from "@/features/main/hooks/useAdminSession";
 import {
   getBannerSettings,
@@ -14,10 +15,12 @@ const emptyBanner: BannerSettings = {
 
 interface BannerProps {
   fallbackLabel?: string;
+  fallbackEditor?: ReactNode;
 }
 
 export const Banner = ({
   fallbackLabel = "Banner",
+  fallbackEditor,
 }: BannerProps) => {
   const [settings, setSettings] =
     useState<BannerSettings>(emptyBanner);
@@ -43,7 +46,7 @@ export const Banner = ({
   }, []);
 
   return (
-    <div className="relative h-56 w-full min-w-0 shrink-0 sm:h-72 lg:h-89.5">
+    <div className="relative size-full min-w-0">
       <div className="isolate size-full overflow-hidden bg-neutral-50 [contain:paint] sm:rounded-2xl sm:[clip-path:inset(0_round_1rem)]">
         {settings.sourceType === "image" && settings.url ? (
           <img
@@ -68,7 +71,7 @@ export const Banner = ({
           />
         ) : (
           <div className="flex size-full items-center justify-center">
-            {fallbackLabel}
+            {fallbackEditor ?? fallbackLabel}
           </div>
         )}
       </div>

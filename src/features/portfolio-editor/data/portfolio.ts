@@ -63,3 +63,36 @@ export async function getPortfolioDocument(
 
   return mapPortfolioDocument(data as PortfolioDocumentRow);
 }
+
+export async function updatePortfolioDocument(
+  record: PortfolioDocumentRecord,
+  document: PortfolioDocument,
+): Promise<PortfolioDocumentRecord> {
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const { data, error } = await supabase
+    .from("portfolio_documents")
+    .update({
+      document,
+      revision: record.revision + 1,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", record.id)
+    .eq("revision", record.revision)
+    .select(portfolioColumns)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    throw new Error(
+      "This portfolio version changed elsewhere. Refresh before trying again.",
+    );
+  }
+
+  return mapPortfolioDocument(data as PortfolioDocumentRow);
+}

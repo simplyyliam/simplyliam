@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { getProjects } from "../data/projects";
 import { useAdminSession } from "../hooks/useAdminSession";
 import type { PortfolioProject } from "../types/project";
@@ -8,11 +9,15 @@ import { Project } from "./Projects";
 interface ProjectsSectionProps {
   heading?: string;
   emptyMessage?: string;
+  headingEditor?: ReactNode;
+  emptyMessageEditor?: ReactNode;
 }
 
 export function ProjectsSection({
   heading = "Projects",
   emptyMessage = "No projects yet, come back later :)",
+  headingEditor,
+  emptyMessageEditor,
 }: ProjectsSectionProps) {
   const [projects, setProjects] = useState<PortfolioProject[]>([]);
   const { isAdmin, session } = useAdminSession();
@@ -55,7 +60,7 @@ export function ProjectsSection({
   return (
     <section className="flex w-full flex-col gap-5">
       <div className="flex items-center gap-1 px-4 sm:px-0">
-        <h2 className="font-medium">{heading}</h2>
+        <h2 className="font-medium">{headingEditor ?? heading}</h2>
         {adminUserId && (
           <ProjectDialog
             adminUserId={adminUserId}
@@ -67,7 +72,7 @@ export function ProjectsSection({
       <div className="flex flex-col">
         {projects.length === 0 ? (
           <div className="flex items-center text-muted-foreground">
-            {emptyMessage}
+            {emptyMessageEditor ?? emptyMessage}
           </div>
         ) : (
           projects.map((project) => (

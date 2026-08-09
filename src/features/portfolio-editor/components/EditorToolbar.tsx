@@ -1,4 +1,13 @@
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import type { PortfolioBlock } from "../types/portfolio"
 
 interface EditorToolbarProps {
   isEditing: boolean
@@ -7,14 +16,18 @@ interface EditorToolbarProps {
   onToggleEditing: () => void
   onDiscardChanges: () => void
   onPublish: () => void
+  sections: PortfolioBlock[]
+  onSectionVisibilityChange: (sectionId: string, visible: boolean) => void
 }
 
-export function EditorToolbar({ isEditing, hasChanges, isPublishing, onToggleEditing, onDiscardChanges, onPublish }: EditorToolbarProps) {
+export function EditorToolbar({ isEditing, hasChanges, isPublishing, onToggleEditing, onDiscardChanges, onPublish, sections, onSectionVisibilityChange }: EditorToolbarProps) {
+  const visibleSectionCount = sections.filter((section) => section.visible).length
+
   return (
     <div
       role="toolbar"
       aria-label="Portfolio editor"
-      className="fixed right-4 bottom-1/4 z-40 flex items-center gap-2 rounded-xl border bg-background/95 p-2 shadow-lg backdrop-blur"
+      className="fixed right-3 bottom-3 left-3 z-40 flex flex-wrap items-center justify-end gap-2 rounded-xl border bg-background/95 p-2 shadow-lg backdrop-blur sm:right-4 sm:bottom-1/4 sm:left-auto"
     >
       <Button
         type="button"
@@ -26,6 +39,32 @@ export function EditorToolbar({ isEditing, hasChanges, isPublishing, onToggleEdi
       </Button>
       {isEditing && (
         <>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button type="button" variant="outline" />}
+            >
+              Sections
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Visible sections</DropdownMenuLabel>
+                {sections.map((section) => (
+                  <DropdownMenuCheckboxItem
+                    key={section.id}
+                    checked={section.visible}
+                    disabled={section.visible && visibleSectionCount === 1}
+                    onCheckedChange={(checked) => {
+                      onSectionVisibilityChange(section.id, checked)
+                    }}
+                    className="capitalize"
+                  >
+                    {section.type}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button
             type="button"
             variant="ghost"

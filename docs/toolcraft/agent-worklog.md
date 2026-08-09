@@ -56,3 +56,14 @@
 - Typography decision: repair the malformed DM Sans theme declaration, use DM Sans as the global Tailwind sans token, and keep readable mobile line heights.
 - Controls, persistence, settings transfer, timeline, layers, and export behavior are unaffected.
 - Verification: run lint and production build, then inspect phone and desktop viewports in a real browser.
+
+## 2026-08-09 — Portfolio visual editor foundation
+
+- Product goal: let the portfolio owner change content, visibility, section order, and responsive layout without editing source files.
+- Document decision: represent the page as versioned JSON containing registered blocks and separate `lg`, `md`, and `sm` grid layouts.
+- Block scope: seed About, Banner, and Projects. Keep project records and banner media in their existing specialized Supabase tables.
+- Responsive decision: use a 12-column desktop grid, 6-column tablet grid, and single-column mobile layout. Mobile prioritizes ordering over freeform placement.
+- Publishing decision: keep one owner-only draft and one publicly readable published document so unfinished edits never leak to visitors.
+- Security decision: enable RLS, allow public reads only for the published version, and restrict draft reads and all writes to the configured portfolio owner.
+- Renderer output, editor controls, inline rich text, drag behavior, history, and publishing actions will be added in later milestones.
+- Verification: run lint, TypeScript production build, and migration syntax review; apply the migration before connecting the public renderer.

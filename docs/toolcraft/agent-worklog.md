@@ -99,3 +99,13 @@
 - Rendering decision: public rich-text JSON is rendered by a small local renderer; the Tiptap editing bundle is lazy-loaded only after the owner enters edit mode.
 - State decision: all inline and visibility updates feed the same working portfolio document as grid changes, so Publish and Discard apply consistently to the entire edit session.
 - Verification: run lint and the production build, verify the editor bundle is code-split, then manually test selection formatting, visibility restoration, publishing, and mobile toolbar wrapping.
+
+## 2026-08-09 — Selection-first rich-text toolbar
+
+- Product goal: make inline editing feel closer to Notion, with clearly highlighted editable copy and a compact contextual toolbar above selected text.
+- Surface decision: all editable text receives a muted gray background; the active browser selection uses a stronger neutral highlight and preserves readable foreground contrast.
+- Toolbar decision: use an opaque foreground-colored surface with a 12 px outer radius, 4 px padding, and 8 px child-control radii so nested corners remain concentric.
+- Formatting controls: support paragraph and heading levels, text colors, bold, italic, underline, links, bulleted lists, and numbered lists.
+- Persistence decision: store formatting as Tiptap JSON marks and nodes; safely render supported links and whitelisted colors for public visitors.
+- Responsive decision: constrain the toolbar to the viewport with horizontal overflow for narrow selections, and measure the grid container before its first render to avoid a desktop-width flash.
+- Verification: run lint and the production build, inspect public desktop and narrow layouts in a real browser, then verify authenticated selection positioning and formatting interactions manually.

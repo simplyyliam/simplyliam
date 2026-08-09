@@ -5,6 +5,28 @@ import type {
   RichTextNode,
 } from "../types/portfolio";
 
+const allowedTextColors = new Set([
+  "#525252",
+  "#92400e",
+  "#c2410c",
+  "#a16207",
+  "#15803d",
+  "#1d4ed8",
+  "#7e22ce",
+  "#be185d",
+  "#b91c1c",
+]);
+
+function getSafeHref(value: unknown) {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  return /^(https?:\/\/|mailto:|\/|#)/i.test(value)
+    ? value
+    : undefined;
+}
+
 function renderChildren(node: RichTextNode, keyPrefix: string) {
   return node.content?.map((child, index) =>
     renderNode(child, `${keyPrefix}-${index}`)
@@ -22,6 +44,34 @@ function renderText(node: RichTextNode, key: string) {
       case "italic":
         content = <em>{content}</em>;
         break;
+      case "underline":
+        content = (
+          <span className="underline decoration-from-font underline-offset-2">
+            {content}
+          </span>
+        );
+        break;
+      case "link": {
+        const href = getSafeHref(mark.attrs?.href);
+        content = href ? (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-from-font underline-offset-2"
+          >
+            {content}
+          </a>
+        ) : content;
+        break;
+      }
+      case "textStyle": {
+        const color = mark.attrs?.color;
+        content = typeof color === "string" && allowedTextColors.has(color)
+          ? <span style={{ color }}>{content}</span>
+          : content;
+        break;
+      }
       case "strike":
         content = <s>{content}</s>;
         break;
@@ -74,7 +124,7 @@ interface RichTextContentProps {
 
 export function RichTextContent({ document }: RichTextContentProps) {
   return (
-    <div className="max-w-3xl text-pretty leading-relaxed text-muted-foreground [&_blockquote]:border-l-2 [&_blockquote]:pl-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:m-0 [&_p+_p]:mt-2 [&_ul]:list-disc [&_ul]:pl-5">
+    <div className="max-w-3xl text-pretty leading-relaxed text-muted-foreground [&_blockquote]:border-l-2 [&_blockquote]:pl-3 [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:font-medium [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:m-0 [&_p+_p]:mt-2 [&_ul]:list-disc [&_ul]:pl-5">
       {renderChildren(document, "rich-text")}
     </div>
   );

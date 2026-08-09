@@ -86,6 +86,7 @@ function PortfolioGrid({
 }: PortfolioGridProps) {
   const { width, containerRef, mounted } = useContainerWidth({
     initialWidth: 696,
+    measureBeforeMount: true,
   });
   const [breakpoint, setBreakpoint] =
     useState<PortfolioBreakpoint>("lg");

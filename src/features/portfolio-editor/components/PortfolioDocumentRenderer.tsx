@@ -131,7 +131,7 @@ function PortfolioGrid({
             <div
               className={
                 isEditing
-                  ? "group/block rounded-2xl outline outline-1 outline-border"
+                  ? "group/block rounded-2xl p-2.5 outline outline-1 outline-border"
                   : undefined
               }
               key={block.id}
@@ -141,7 +141,7 @@ function PortfolioGrid({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="portfolio-drag-handle absolute top-2 right-2 z-10 cursor-grab capitalize shadow-sm backdrop-blur active:cursor-grabbing"
+                  className="portfolio-drag-handle absolute top-2 right-2 z-20 cursor-grab capitalize shadow-sm backdrop-blur active:cursor-grabbing"
                   aria-label={`Move ${block.type} section`}
                 >
                   <HugeiconsIcon

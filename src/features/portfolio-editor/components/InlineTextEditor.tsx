@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { cn } from "@/lib/utils";
 
 interface InlineTextEditorProps {
   value: string;
@@ -36,7 +37,10 @@ export function InlineTextEditor({
       aria-multiline={multiline}
       contentEditable
       suppressContentEditableWarning
-      className="min-w-8 rounded-md bg-muted/80 px-1.5 py-0.5 -mx-1.5 -my-0.5 caret-foreground outline-none ring-ring/30 selection:bg-neutral-400/50 selection:text-foreground transition-[background-color,box-shadow] duration-150 empty:before:text-muted-foreground empty:before:content-['Type_something…'] focus-visible:bg-muted focus-visible:ring-2"
+      className={cn(
+        "min-w-8 rounded-md bg-muted/80 px-1.5 py-0.5 -mx-1.5 -my-0.5 caret-foreground outline-none ring-ring/30 selection:bg-neutral-400/50 selection:text-foreground transition-[background-color,box-shadow] duration-150 empty:before:text-muted-foreground empty:before:content-['Type_something…'] focus-visible:bg-muted focus-visible:ring-2",
+        !multiline && "whitespace-nowrap",
+      )}
       onFocus={() => {
         valueOnFocusRef.current = value;
       }}

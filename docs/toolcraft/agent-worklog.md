@@ -109,3 +109,13 @@
 - Persistence decision: store formatting as Tiptap JSON marks and nodes; safely render supported links and whitelisted colors for public visitors.
 - Responsive decision: constrain the toolbar to the viewport with horizontal overflow for narrow selections, and measure the grid container before its first render to avoid a desktop-width flash.
 - Verification: run lint and the production build, inspect public desktop and narrow layouts in a real browser, then verify authenticated selection positioning and formatting interactions manually.
+
+## 2026-08-09 — Inline editor spacing and stacking polish
+
+- Product goal: remove awkward wrapping and make edit-mode surfaces feel intentional without changing the published portfolio layout.
+- Typography decision: keep short plain-text fields on one line; the introduction and rotating-role controls remain a single non-wrapping row.
+- Highlight decision: apply the biography’s muted background to cloned inline fragments so each wrapped line receives its own fitted highlight instead of one full-width rectangle.
+- Section decision: add a 10 px inset inside editable grid items while leaving public section spacing unchanged.
+- Layering decision: portal the selection toolbar to the document body with fixed positioning and a layer above avatars and grid controls but below modal and dropdown overlays.
+- Scope decision: keep the introduction as a plain-text field without rich formatting controls; the contextual toolbar remains attached to biography rich text where formatting can be persisted correctly.
+- Verification: run lint and the production build, then verify non-wrapping intro copy, line-level highlights, section insets, and toolbar layering in authenticated edit mode.

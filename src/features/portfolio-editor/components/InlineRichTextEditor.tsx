@@ -79,7 +79,7 @@ export function InlineRichTextEditor({
       attributes: {
         "aria-label": label,
         class:
-          "min-h-16 max-w-3xl rounded-lg bg-muted/80 px-2 py-1.5 -mx-2 -my-1.5 leading-relaxed text-muted-foreground caret-foreground outline-none ring-ring/30 selection:bg-neutral-400/50 selection:text-foreground transition-[background-color,box-shadow] duration-150 [&_a]:underline [&_a]:underline-offset-2 [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:font-medium [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:m-0 [&_p+_p]:mt-2 [&_ul]:list-disc [&_ul]:pl-5 focus-visible:bg-muted focus-visible:ring-2",
+          "min-h-16 max-w-3xl rounded-lg px-1 py-1 -mx-1 leading-relaxed text-muted-foreground caret-foreground outline-none ring-ring/30 selection:bg-neutral-400/50 selection:text-foreground transition-[box-shadow] duration-150 [&_a]:underline [&_a]:underline-offset-2 [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:font-medium [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:inline [&_p]:box-decoration-clone [&_p]:rounded-sm [&_p]:bg-muted/80 [&_p]:px-1 [&_p]:py-0.5 [&_p]:after:whitespace-pre [&_p]:after:content-['\\A'] [&_ul]:list-disc [&_ul]:pl-5 focus-visible:ring-2",
       },
     },
     onUpdate: ({ editor: currentEditor }) => {
@@ -165,8 +165,11 @@ export function InlineRichTextEditor({
     <>
       <BubbleMenu
         editor={editor}
+        className="z-40"
+        appendTo={() => document.body}
         updateDelay={80}
         options={{
+          strategy: "fixed",
           placement: "top",
           offset: 8,
           flip: true,

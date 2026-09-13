@@ -1,8 +1,8 @@
-import { RouterProvider } from "react-router-dom";
-import { Router } from "./Router";
-
 export default function App() {
   return (
-    <RouterProvider router={Router}/>
-  )
+    <main className="flex min-h-svh flex-col items-center justify-center gap-2">
+      <h1 className="text-2xl font-semibold">Simply Liam — v2</h1>
+      <p className="text-muted-foreground">Clean slate. Start building here.</p>
+    </main>
+  );
 }

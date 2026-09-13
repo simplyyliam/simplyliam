@@ -5,6 +5,8 @@
 @import "@fontsource/dm-sans/500.css";
 @import "@fontsource/dm-sans/600.css";
 @import "@fontsource/dm-sans/700.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -130,47 +132,5 @@
     }
   html {
     @apply font-sans antialiased;
-    }
-}
-
-.portfolio-auto-height {
-    height: var(--portfolio-section-height) !important;
-}
-
-.portfolio-auto-height.portfolio-auto-height-editing {
-    height: auto !important;
-}
-
-.portfolio-manual-height:not(.resizing) {
-    height: var(--portfolio-section-height) !important;
-}
-
-.react-grid-item.react-grid-placeholder {
-    display: none !important;
-}
-
-.react-grid-item.portfolio-live-drag {
-    width: var(--portfolio-live-width) !important;
-    transform: translate(
-        calc(var(--portfolio-live-x) + var(--portfolio-live-offset-x)),
-        calc(var(--portfolio-live-y) + var(--portfolio-live-offset-y))
-    ) !important;
-}
-
-.portfolio-autofit-grid > .react-grid-item {
-    transition-property: transform, width, height;
-    transition-duration: 320ms;
-    transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
-}
-
-.portfolio-autofit-grid > .react-grid-item.react-draggable-dragging,
-.portfolio-autofit-grid > .react-grid-item.resizing,
-.portfolio-autofit-grid > .react-grid-item.portfolio-live-drag {
-    transition: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .portfolio-autofit-grid > .react-grid-item {
-        transition-duration: 0ms;
     }
 }
